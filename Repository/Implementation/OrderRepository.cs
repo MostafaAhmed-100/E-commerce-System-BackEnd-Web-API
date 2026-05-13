@@ -1,8 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
 using WebApplication1.Entitys;
+using WebApplication1.Repository.Interface;
 
-namespace WebApplication1.Repository
+namespace WebApplication1.Repository.Implementation
 {
     public class OrderRepository : IOrderRepository
     {

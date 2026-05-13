@@ -2,7 +2,7 @@
 using WebApplication1.Entitys;
 using WebApplication1.Models;
 
-namespace WebApplication1.Services
+namespace WebApplication1.Services.Interface
 {
     public interface IOrderService
     {

@@ -1,4 +1,4 @@
-﻿namespace WebApplication1.Services
+﻿namespace WebApplication1.Services.Interface
 {
     public interface IFileServices
     {

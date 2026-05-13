@@ -1,6 +1,6 @@
 ﻿using WebApplication1.Entitys;
 
-namespace WebApplication1.Repository
+namespace WebApplication1.Repository.Interface
 {
     public interface ILoginAndRegisterRepository
     {

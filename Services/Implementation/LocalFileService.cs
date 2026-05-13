@@ -1,4 +1,6 @@
-﻿namespace WebApplication1.Services
+﻿using WebApplication1.Services.Interface;
+
+namespace WebApplication1.Services.Implementation
 {
     public class LocalFileService : IFileServices
     {

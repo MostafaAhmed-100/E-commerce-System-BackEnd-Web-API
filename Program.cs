@@ -4,9 +4,10 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using WebApplication1;
 using WebApplication1.Authentication;
-using WebApplication1.Repositories;
-using WebApplication1.Repository;
-using WebApplication1.Services;
+using WebApplication1.Repository.Implementation;
+using WebApplication1.Repository.Interface;
+using WebApplication1.Services.Implementation;
+using WebApplication1.Services.Interface;
 
 var builder = WebApplication.CreateBuilder(args);
 

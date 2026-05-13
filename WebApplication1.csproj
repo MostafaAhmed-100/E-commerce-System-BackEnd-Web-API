@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Repository\ICategoryRepository.cs">
+    <Compile Update="Repository\Interface\ICategoryRepository.cs">
       <CopyToOutputDirectory>ICategoryRepoitory</CopyToOutputDirectory>
     </Compile>
   </ItemGroup>

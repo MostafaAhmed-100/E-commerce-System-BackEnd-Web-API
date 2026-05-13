@@ -1,4 +1,4 @@
-﻿namespace WebApplication1.Repository
+﻿namespace WebApplication1.Repository.Interface
 {
     public interface ICartRepository
     {

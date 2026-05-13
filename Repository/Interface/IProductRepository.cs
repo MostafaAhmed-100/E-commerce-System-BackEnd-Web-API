@@ -2,7 +2,7 @@
 
 
 
-namespace WebApplication1.Repositories
+namespace WebApplication1.Repository.Interface
 {
     public interface IProductRepository
     {

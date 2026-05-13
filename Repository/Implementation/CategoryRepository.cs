@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using WebApplication1.Repositories;
+using WebApplication1.Repository.Interface;
 
-namespace WebApplication1.Repository
+namespace WebApplication1.Repository.Implementation
 {
     public class CategoryRepository : ICategoryRepository
     {

@@ -2,9 +2,10 @@
 using WebApplication1.DTOS;
 using WebApplication1.Entitys;
 using WebApplication1.Models;
-using WebApplication1.Repository;
+using WebApplication1.Repository.Interface;
+using WebApplication1.Services.Interface;
 
-namespace WebApplication1.Services
+namespace WebApplication1.Services.Implementation
 {
     public class LoginAndRegisterService : ILoginAndRegisterService
     {

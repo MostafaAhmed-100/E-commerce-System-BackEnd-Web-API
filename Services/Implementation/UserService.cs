@@ -1,10 +1,11 @@
 ﻿using WebApplication1.DTOS;
 using WebApplication1.Entitys;
 using WebApplication1.Models;
-using WebApplication1.Repository;
 using Microsoft.AspNetCore.Identity;
+using WebApplication1.Services.Interface;
+using WebApplication1.Repository.Interface;
 
-namespace WebApplication1.Services
+namespace WebApplication1.Services.Implementation
 {
     public class UserService : IUserService 
     {
