@@ -27,7 +27,7 @@ namespace WebApplication1.Controllers
             response.StatusMessage = "";
             return Ok(response);
         }
-        [HttpGet("Get-By-Id{Id}")]
+        [HttpGet("Get-By-Id/{Id:int}")]
         public async Task<IActionResult>    GetById(int Id)
         {
             var Result = await _IcategoryService.GetByIdAsync(Id);
@@ -53,7 +53,7 @@ namespace WebApplication1.Controllers
             response.Data = Create;
             return Ok(response);
         }
-        [HttpPut("Update-Categry")]
+        [HttpPut("Update-Categry/{Id:int}")]
         public async Task<IActionResult> UpdateCategry(int Id , Category category)
         {
             var Result =await _IcategoryService.UpdateByIdAsync(Id, category);
@@ -71,7 +71,7 @@ namespace WebApplication1.Controllers
             }
             return Ok(response);
         }
-        [HttpDelete("Delete-By-Id{Id}")]
+        [HttpDelete("Delete-By-Id/{Id:int}")]
         public async Task<IActionResult> DeleteById(int Id)
         {
             var Deleted = await _IcategoryService.DeleteByIdAsync(Id);

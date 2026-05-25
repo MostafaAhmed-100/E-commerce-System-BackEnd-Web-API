@@ -1,7 +1,6 @@
 ﻿using WebApplication1.DTOS;
 using WebApplication1.Entities;
 using WebApplication1.Models;
-using WebApplication1.Repositories;
 using WebApplication1.Repository.Interface;
 using WebApplication1.Services.Interface;
 
@@ -23,6 +22,8 @@ namespace WebApplication1.Services.Implementation
             {
                 CategoryId = x.CategoryId,
                 CategoryName = x.CategoryName,
+
+                
             }).ToList();
         }
 

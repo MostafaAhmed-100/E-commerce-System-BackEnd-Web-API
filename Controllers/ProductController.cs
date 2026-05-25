@@ -26,7 +26,7 @@ namespace WebApplication1.Controllers
             response.StatusMessage="";
             return Ok(response);
         }
-        [HttpGet("Get-By-Product-Id{Id}")]
+        [HttpGet("Get-By-Product-Id/{Id:int}")]
         public async Task<IActionResult> GetById(int Id)
         {
             var Result = await _productService.GetByProductId(Id);
@@ -51,8 +51,8 @@ namespace WebApplication1.Controllers
             response.StatusMessage = "The Product Has been Added";
             return Ok(response);
         }
-        [HttpPut("Update-Product{Id , product}")]
-        public async Task<IActionResult> UpdateProduct(int Id, [FromForm] Product product)
+        [HttpPut("Update-Product")]
+        public async Task<IActionResult> UpdateProduct(int Id,Product product)
         {
             var Update = await _productService.UpdateProduct(Id , product);
             if (Update == null)
@@ -64,7 +64,7 @@ namespace WebApplication1.Controllers
             }
             return Ok(Update);
         }
-        [HttpDelete("Delete-Product{Id}")]
+        [HttpDelete("Delete-Product{Id:int}")]
         public async Task<IActionResult> DeleteProduct(int Id)
         {
             var Result = await _productService.DeleteByProductId(Id);

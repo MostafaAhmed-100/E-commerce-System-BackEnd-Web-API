@@ -28,7 +28,7 @@ namespace WebApplication1.Controllers
             return Ok(response);
 
         }
-        [HttpGet("Get-By-Id")]
+        [HttpGet("Get-By-Id/{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
             var OrderById = await _orderService.GetByIdAsync(id);
@@ -62,7 +62,7 @@ namespace WebApplication1.Controllers
             }
             return Ok(response);
         }
-        [HttpDelete("Delete-By-Id{Id}")]
+        [HttpDelete("Delete-By-Id{Id:int}")]
         public async Task<IActionResult> DeleteById(int Id)
         {
             var Deleted = await _orderService.DeleteByIdAsync(Id);

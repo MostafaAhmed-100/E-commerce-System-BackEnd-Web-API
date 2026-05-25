@@ -27,7 +27,7 @@ namespace WebApplication1.Controllers
             return Ok(response);
         }
 
-        [HttpGet("Get-By-Id/{Id}")]
+        [HttpGet("Get-By-Id/{Id:int}")]
         public async Task<IActionResult> GetById(int Id)
         {
             var result = await _cartService.GetByIdAsync(Id);
@@ -56,7 +56,7 @@ namespace WebApplication1.Controllers
             return Ok(response);
         }
 
-        [HttpPut("Update-Cart/{Id}")]
+        [HttpPut("Update-Cart/{Id:int}")]
         public async Task<IActionResult> UpdateCart(int Id, CartDTO cart)
         {
             var result = await _cartService.UpdateByIdAsync(Id, cart);
@@ -75,7 +75,7 @@ namespace WebApplication1.Controllers
             return Ok(response);
         }
 
-        [HttpDelete("Delete-By-Id/{Id}")]
+        [HttpDelete("Delete-By-Id/{Id:int}")]
         public async Task<IActionResult> DeleteById(int Id)
         {
             var deleted = await _cartService.DeleteByIdAsync(Id);

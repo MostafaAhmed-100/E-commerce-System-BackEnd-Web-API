@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.DTOS;
 using WebApplication1.Entitys;
@@ -27,7 +28,7 @@ namespace WebApplication1.Controllers
             response.Data = AllUsers;
             return Ok(response);
         }
-        [HttpGet("Get-User-By-Id")]
+        [HttpGet("Get-User-By-Id/{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
             var Result = await _userService.GetUserById(id);
@@ -62,7 +63,7 @@ namespace WebApplication1.Controllers
             return Ok(response);
 
         }
-        [HttpDelete("Delete-User")]
+        [HttpDelete("Delete-User/{id:int}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
             var Delete = await _userService.DeleteUser(id);
