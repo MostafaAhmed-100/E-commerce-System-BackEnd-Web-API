@@ -1,11 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using WebApplication1.Entitys;
+using WebApplication1.Models;
 
 namespace WebApplication1
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>
     {
-        public AppDbContext(DbContextOptions options) : base(options)
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
         public DbSet<Category> Categories { get; set; }
@@ -36,7 +39,7 @@ namespace WebApplication1
                 .HasForeignKey(o => o.CartId);
             modelBuilder.Entity<Address>()
                 .HasOne(a => a.User)
-                .WithMany()
+                .WithMany(u => u.Addresses)
                 .HasForeignKey(a => a.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<Order>()

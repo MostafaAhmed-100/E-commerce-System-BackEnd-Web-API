@@ -1,8 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
 
 namespace WebApplication1.Entitys
 {
-    public class User
+    public class User : IdentityUser<int>
     {
         [Key]
         public int UserId { get; set; }
@@ -12,6 +13,7 @@ namespace WebApplication1.Entitys
         public string UserName { get; set; }
         [Required, MaxLength(100)]
         public string UserEmail { get; set; }
+        public int identityId { get; set; }
         [Required, MaxLength(500)]
         public string UserPassword { get; set; }
         public ICollection<Address> Addresses { get; set; } = new List<Address>();
