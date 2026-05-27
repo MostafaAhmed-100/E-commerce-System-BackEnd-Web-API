@@ -8,20 +8,17 @@ namespace WebApplication1.Entitys
         [Key]
         public int AddressId { get; set; }
         [Required]
-        public int UserId { get; set; }
+        public required int UserId { get; set; }
         [Required]
-        public string City { get; set; }
+        public required string City { get; set; }
+
         [Required]
-        public string HomeAddress { get; set; }
+        public required string HomeAddress { get; set; }
         [Required]
-        public string State { get; set; }
+        public required string State { get; set; }
         [Required]
-        public string Zip_Code { get; set; }
+        public required string Zip_Code { get; set; }
         [ForeignKey(nameof(UserId))]
         public User User { get; set; }
-
-   
-
-
     }
 }

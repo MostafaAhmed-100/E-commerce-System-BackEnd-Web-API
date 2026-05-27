@@ -1,18 +1,19 @@
-﻿
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace WebApplication1.Entities
+namespace WebApplication1.Entitys
 {
     public class Category
     {
-        [Key]
-        public int CategoryId { get; set; }
+        public required int CategoryId { get; set; }
 
-        [Required, MaxLength(100)]
-        public string CategoryName { get; set; }
+        [Required]
+        public required string CategoryName { get; set; }
+        
+        public int? ParentCategoryId { get; set; }
 
-        [Required, MaxLength(1000)]
-        public string CategoryDescription { get; set; }
+        public Category? ParentCategory { get; set; }
+
+        public ICollection<Category> SubCategories { get; set; } = new List<Category>();
 
         public ICollection<Product> Products { get; set; } = new List<Product>();
     }

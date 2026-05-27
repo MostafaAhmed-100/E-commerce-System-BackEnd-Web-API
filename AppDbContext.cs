@@ -1,55 +1,68 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
+using WebApplication1.Entities;
 using WebApplication1.Entitys;
-using WebApplication1.Models;
 
-namespace WebApplication1
+namespace WebApplication1.Data
 {
-    public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>
+    public class AppDbContext : IdentityDbContext<User, Role, int>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
+        public DbSet<Seller> Sellers { get; set; }
+        public DbSet<Buyer> Buyers { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Product> Products { get; set; }
+        public DbSet<ProductVariant> ProductVariants { get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Address> Addresses { get; set; }
         public DbSet<Cart> Carts { get; set; }
-        public DbSet<Address> Address { get; set; }
-        public DbSet<User> Users { get; set; }
-        public DbSet<Order> Order { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Seller)
+                .WithOne(s => s.User)
+                .HasForeignKey<Seller>(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade); 
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Buyer)
+                .WithOne(b => b.User)
+                .HasForeignKey<Buyer>(b => b.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Category>()
+                .HasOne(c => c.ParentCategory)      
+                .WithMany(c => c.SubCategories)     
+                .HasForeignKey(c => c.ParentCategoryId) 
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Address)
+                .WithMany()
+                .HasForeignKey(o => o.AddressId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.ProductVariant)
+                .WithMany()
+                .HasForeignKey(oi => oi.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<Product>()
                 .HasOne(p => p.Category)
                 .WithMany(c => c.Products)
-                .HasForeignKey(p => p.CategoryId);
-            modelBuilder.Entity<Product>()
-                .HasMany(p => p.Carts)
-                .WithMany(c => c.Products)
-                .UsingEntity(j => j.ToTable("CartProducts"));
-            modelBuilder.Entity<Cart>()
-                .Property(c => c.Size)
-                .HasPrecision(18, 2);
-            modelBuilder.Entity<Order>()
-                .HasOne(o => o.Cart)
-                .WithMany(c => c.Orders)
-                .HasForeignKey(o => o.CartId);
-            modelBuilder.Entity<Address>()
-                .HasOne(a => a.User)
-                .WithMany(u => u.Addresses)
-                .HasForeignKey(a => a.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<Order>()
-                .HasOne(o => o.User)
-                .WithMany()
-                .HasForeignKey(o => o.UserId)
+                .HasForeignKey(p => p.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-
+            modelBuilder.Entity<Product>().HasQueryFilter(p => !p.IsDeleted);
+            modelBuilder.Entity<Seller>().HasQueryFilter(s => !s.IsDeleted);
+            modelBuilder.Entity<Buyer>().HasQueryFilter(b => !b.IsDeleted);
+            modelBuilder.Entity<Order>().HasQueryFilter(o => !o.IsDeleted);
+            modelBuilder.Entity<ProductVariant>()
+                .HasIndex(v => v.SKU)
+                .IsUnique();
         }
-
     }
 }

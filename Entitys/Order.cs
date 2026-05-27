@@ -8,17 +8,26 @@ namespace WebApplication1.Entitys
         [Key]
         public int OrderId { get; set; }
         [Required]
-        public int AddressId { get; set; }
+        public required int AddressId { get; set; }
         [Required]
-        public int UserId { get; set; }
+        public  required int BuyerId { get; set; }
         [Required]
-        public int CartId { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        [Required]
+        public bool IsDeleted { get; set; } = false;
+        [Required]
+        public string? CouponId { get; set; } = null;
+        [Required]
+        public decimal? DiscountAmount { get; set; } = null;
+        [Required]
+        public required int CartId { get; set; }
         [ForeignKey(nameof(CartId))]
         public Cart Cart { get; set; } = null!;
-        [ForeignKey(nameof(UserId))]
-        public User User { get; set; } = null!;
+        [ForeignKey(nameof(BuyerId))]
+        public Buyer Buyer { get; set; } = null!;
         [ForeignKey(nameof(AddressId))]
-        public Address Address { get; set; } = null!;
-       
+        public Address? Address { get; set; } = null;
+        public Coupon? Coupon { get; set; } = null;
+
     }
 }

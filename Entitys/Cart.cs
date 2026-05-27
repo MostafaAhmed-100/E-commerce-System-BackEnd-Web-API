@@ -10,10 +10,10 @@ namespace WebApplication1.Entities
         public int CartId { get; set; }
 
         [Required]
-        public decimal Size { get; set; }
+        public required decimal Size { get; set; }
 
         [Required]
-        public int Quantity { get; set; }
+        public required int Quantity { get; set; }
 
         public ICollection<Product> Products { get; set; } = new List<Product>();
 
