@@ -10,7 +10,8 @@ namespace WebApplication1.Entitys
         public required int UserId { get; set; }
         [ForeignKey("UserId")]
         public required User User { get; set; }
-        public string TaxNumber { get; set; }
+        [Required]
+        public required string TaxNumber { get; set; }
         [Required,MaxLength(90)]
         public required string BankAccountNumber { get; set; }
         [Required,MaxLength(100)]

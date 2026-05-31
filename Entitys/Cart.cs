@@ -8,15 +8,12 @@ namespace WebApplication1.Entities
     {
         [Key]
         public int CartId { get; set; }
-
         [Required]
-        public required decimal Size { get; set; }
+        public required int BuyerId { get; set; }
 
-        [Required]
-        public required int Quantity { get; set; }
+        [Required, ForeignKey("BuyerId")]
+        public Buyer Buyer { get; set; }
 
-        public ICollection<Product> Products { get; set; } = new List<Product>();
-
-        public ICollection<Order> Orders { get; set; } = new List<Order>();
+        public ICollection<CartItem> Items { get; set; } = new List<CartItem>();
     }
 }

@@ -12,8 +12,8 @@ using WebApplication1.Data;
 namespace WebApplication1.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260527002751_AdvancedArchitecture")]
-    partial class AdvancedArchitecture
+    [Migration("20260531010459_FixAllRelations")]
+    partial class FixAllRelations
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,21 +24,6 @@ namespace WebApplication1.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("CartProduct", b =>
-                {
-                    b.Property<int>("CartsCartId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ProductsProductId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CartsCartId", "ProductsProductId");
-
-                    b.HasIndex("ProductsProductId");
-
-                    b.ToTable("CartProduct");
-                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
                 {
@@ -151,13 +136,17 @@ namespace WebApplication1.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CartId"));
 
-                    b.Property<int>("Quantity")
+                    b.Property<int>("BuyerId")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("Size")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<int?>("ProductId")
+                        .HasColumnType("int");
 
                     b.HasKey("CartId");
+
+                    b.HasIndex("BuyerId");
+
+                    b.HasIndex("ProductId");
 
                     b.ToTable("Carts");
                 });
@@ -193,11 +182,16 @@ namespace WebApplication1.Migrations
                     b.Property<int>("SellerId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("SellerId1")
+                        .HasColumnType("int");
+
                     b.HasKey("ProductId");
 
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("SellerId");
+
+                    b.HasIndex("SellerId1");
 
                     b.ToTable("Products");
                 });
@@ -269,6 +263,32 @@ namespace WebApplication1.Migrations
                     b.ToTable("Buyers");
                 });
 
+            modelBuilder.Entity("WebApplication1.Entitys.CartItem", b =>
+                {
+                    b.Property<int>("CartItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CartItemId"));
+
+                    b.Property<int>("CartId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductVariantId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("CartItemId");
+
+                    b.HasIndex("CartId");
+
+                    b.HasIndex("ProductVariantId");
+
+                    b.ToTable("CartItems");
+                });
+
             modelBuilder.Entity("WebApplication1.Entitys.Category", b =>
                 {
                     b.Property<int>("CategoryId")
@@ -329,7 +349,7 @@ namespace WebApplication1.Migrations
 
                     b.HasIndex("SellerId");
 
-                    b.ToTable("Coupon");
+                    b.ToTable("Coupons");
                 });
 
             modelBuilder.Entity("WebApplication1.Entitys.Order", b =>
@@ -346,20 +366,16 @@ namespace WebApplication1.Migrations
                     b.Property<int>("BuyerId")
                         .HasColumnType("int");
 
-                    b.Property<int>("CartId")
+                    b.Property<int?>("BuyerId1")
                         .HasColumnType("int");
 
-                    b.Property<string>("CouponId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("CouponId1")
+                    b.Property<int?>("CouponId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<decimal>("DiscountAmount")
+                    b.Property<decimal?>("DiscountAmount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsDeleted")
@@ -371,9 +387,9 @@ namespace WebApplication1.Migrations
 
                     b.HasIndex("BuyerId");
 
-                    b.HasIndex("CartId");
+                    b.HasIndex("BuyerId1");
 
-                    b.HasIndex("CouponId1");
+                    b.HasIndex("CouponId");
 
                     b.ToTable("Orders");
                 });
@@ -539,9 +555,6 @@ namespace WebApplication1.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
-                    b.Property<int>("AddressId")
-                        .HasColumnType("int");
-
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
@@ -599,21 +612,6 @@ namespace WebApplication1.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("CartProduct", b =>
-                {
-                    b.HasOne("WebApplication1.Entities.Cart", null)
-                        .WithMany()
-                        .HasForeignKey("CartsCartId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WebApplication1.Entities.Product", null)
-                        .WithMany()
-                        .HasForeignKey("ProductsProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
                 {
                     b.HasOne("WebApplication1.Entitys.Role", null)
@@ -665,6 +663,21 @@ namespace WebApplication1.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("WebApplication1.Entities.Cart", b =>
+                {
+                    b.HasOne("WebApplication1.Entitys.Buyer", "Buyer")
+                        .WithMany()
+                        .HasForeignKey("BuyerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WebApplication1.Entities.Product", null)
+                        .WithMany("Carts")
+                        .HasForeignKey("ProductId");
+
+                    b.Navigation("Buyer");
+                });
+
             modelBuilder.Entity("WebApplication1.Entities.Product", b =>
                 {
                     b.HasOne("WebApplication1.Entitys.Category", "Category")
@@ -674,10 +687,14 @@ namespace WebApplication1.Migrations
                         .IsRequired();
 
                     b.HasOne("WebApplication1.Entitys.Seller", "Seller")
-                        .WithMany("products")
+                        .WithMany()
                         .HasForeignKey("SellerId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("WebApplication1.Entitys.Seller", null)
+                        .WithMany("products")
+                        .HasForeignKey("SellerId1");
 
                     b.Navigation("Category");
 
@@ -704,6 +721,25 @@ namespace WebApplication1.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("WebApplication1.Entitys.CartItem", b =>
+                {
+                    b.HasOne("WebApplication1.Entities.Cart", "Cart")
+                        .WithMany("Items")
+                        .HasForeignKey("CartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WebApplication1.Entitys.ProductVariant", "ProductVariant")
+                        .WithMany()
+                        .HasForeignKey("ProductVariantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Cart");
+
+                    b.Navigation("ProductVariant");
                 });
 
             modelBuilder.Entity("WebApplication1.Entitys.Category", b =>
@@ -734,26 +770,22 @@ namespace WebApplication1.Migrations
                         .IsRequired();
 
                     b.HasOne("WebApplication1.Entitys.Buyer", "Buyer")
-                        .WithMany("Orders")
+                        .WithMany()
                         .HasForeignKey("BuyerId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("WebApplication1.Entities.Cart", "Cart")
+                    b.HasOne("WebApplication1.Entitys.Buyer", null)
                         .WithMany("Orders")
-                        .HasForeignKey("CartId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("BuyerId1");
 
                     b.HasOne("WebApplication1.Entitys.Coupon", "Coupon")
                         .WithMany()
-                        .HasForeignKey("CouponId1");
+                        .HasForeignKey("CouponId");
 
                     b.Navigation("Address");
 
                     b.Navigation("Buyer");
-
-                    b.Navigation("Cart");
 
                     b.Navigation("Coupon");
                 });
@@ -761,7 +793,7 @@ namespace WebApplication1.Migrations
             modelBuilder.Entity("WebApplication1.Entitys.OrderItem", b =>
                 {
                     b.HasOne("WebApplication1.Entitys.Order", "Order")
-                        .WithMany()
+                        .WithMany("OrderItems")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -801,11 +833,13 @@ namespace WebApplication1.Migrations
 
             modelBuilder.Entity("WebApplication1.Entities.Cart", b =>
                 {
-                    b.Navigation("Orders");
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("WebApplication1.Entities.Product", b =>
                 {
+                    b.Navigation("Carts");
+
                     b.Navigation("ProductVariants");
                 });
 
@@ -819,6 +853,11 @@ namespace WebApplication1.Migrations
                     b.Navigation("Products");
 
                     b.Navigation("SubCategories");
+                });
+
+            modelBuilder.Entity("WebApplication1.Entitys.Order", b =>
+                {
+                    b.Navigation("OrderItems");
                 });
 
             modelBuilder.Entity("WebApplication1.Entitys.Seller", b =>

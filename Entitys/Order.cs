@@ -15,14 +15,12 @@ namespace WebApplication1.Entitys
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         [Required]
         public bool IsDeleted { get; set; } = false;
-        [Required]
-        public string? CouponId { get; set; } = null;
-        [Required]
+        public int? CouponId { get; set; } = null;
+
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public decimal? DiscountAmount { get; set; } = null;
-        [Required]
-        public required int CartId { get; set; }
-        [ForeignKey(nameof(CartId))]
-        public Cart Cart { get; set; } = null!;
+
+       
         [ForeignKey(nameof(BuyerId))]
         public Buyer Buyer { get; set; } = null!;
         [ForeignKey(nameof(AddressId))]
