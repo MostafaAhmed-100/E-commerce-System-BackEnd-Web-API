@@ -8,7 +8,7 @@ namespace WebApplication1.DTOS.Response_DTOs
         public required string SKU { get; set; }
         public required decimal Price { get; set; }
         public required bool IsAvailable { get; set; }
-        public required string Color { get; set; }
-        public required string Size { get; set; }
+        public string? Color { get; set; }
+        public string? Size { get; set; }
     }
 }

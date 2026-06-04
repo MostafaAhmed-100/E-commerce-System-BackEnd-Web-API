@@ -5,10 +5,9 @@ namespace WebApplication1.Entitys
 {
     public class CartItem
     {
-        [Key, Required]
-        public required int CartItemId { get; set; }
-        [Required]
-        public required int CartId { get; set; }
+        [Key]
+        public int CartItemId { get; set; }
+        public  int CartId { get; set; }
 
         [Required]
         public required int Quantity { get; set; }

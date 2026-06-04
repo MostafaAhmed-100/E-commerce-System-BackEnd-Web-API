@@ -4,7 +4,8 @@ namespace WebApplication1.Entitys
 {
     public class Category
     {
-        public required int CategoryId { get; set; }
+        [Key]
+        public int CategoryId { get; set; }
 
         [Required]
         public required string CategoryName { get; set; }

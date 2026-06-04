@@ -7,8 +7,10 @@ namespace WebApplication1.DTOS.Response_DTOs
         public required int ProductId { get; set; }
         public required string ProductName { get; set; }
         public required string ProductDescription { get; set; }
+        public int CategoryId { get; set; }
         public required string CategoryName { get; set; }
         public required string SellerStoreName { get; set; }
+        public required int SellerId { get; set; }
         public required List<ProductVariantResponseDto> Variants { get; set; }
     }
 }

@@ -6,10 +6,9 @@ namespace WebApplication1.DTOS.Request_DTOs
     {
         [Required, MaxLength(100)]
         public required string ProductName { get; set; }
-        [Required, MaxLength(250)]
+        [Required, MaxLength(1000)]
         public required string ProductDescription { get; set; }
-        [Required, MaxLength(250)]
-        public required string ImagePath { get; set; }
+
         [Required]
         public required int CategoryId { get; set; }
         [Required, MinLength(1)]

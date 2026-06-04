@@ -9,7 +9,7 @@ namespace WebApplication1.Entities
     public class Product
     {
         [Key]
-        public required int ProductId { get; set; }
+        public int ProductId { get; set; }
         [Required]
         public required int SellerId { get; set; }
         [Required]
@@ -26,10 +26,9 @@ namespace WebApplication1.Entities
         public required int CategoryId { get; set; }
 
         [ForeignKey(nameof(CategoryId))]
-        public required Category Category { get; set; }
+        public Category Category { get; set; }
         public ICollection<Cart> Carts { get; set; } = new List<Cart>();
-        [Required]
-        public required Seller Seller { get; set; }
+        public Seller Seller { get; set; }
         public ICollection<ProductVariant> ProductVariants { get; set; } = new List<ProductVariant>();
 
     }

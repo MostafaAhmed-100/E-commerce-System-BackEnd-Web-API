@@ -1,0 +1,66 @@
+﻿using WebApplication1.DTOS.Request_DTOs;
+using WebApplication1.DTOS.Response_DTOs;
+using WebApplication1.Entitys;
+using WebApplication1.Repository.SpecificRepository.BuyerRepository;
+using WebApplication1.Repository.SpecificRepository.SellerRepository;
+
+namespace WebApplication1.Services.AccountService
+{
+    public class AccountService : IAccountService
+    {
+
+        private readonly UserManager<User> _userManager;
+        private readonly IBuyerRepository _buyerRepository;
+        private readonly ISellerRepository _sellerRepository;
+        public AccountService
+        (
+            UserManager<User> userManager,
+            IBuyerRepository buyerRepository,
+            ISellerRepository sellerRepository
+        )
+        {
+            _userManager = userManager;
+            _buyerRepository = buyerRepository;
+            _sellerRepository = sellerRepository;
+        }
+        public async Task<ApiResponseDto<string>> DeleteAccountAsync(int userId)
+        {
+            var User = await _userManager.FindByIdAsync(userId.ToString());
+            if (User == null)
+            {
+                return new ApiResponseDto<string>
+                {
+                    IsSuccess = false,
+                    StatusCode = 404,
+                    ErrorCode = "INVALID_CREDENTIALS",
+                    Data = null,
+                    Message = "User not found"
+                };
+            }
+            await _userManager.SetLockoutEnabledAsync(User, enabled: true);
+            await _userManager.SetLockoutEndDateAsync(User, DateTimeOffset.MaxValue);
+            bool isBuyer = await _userManager.IsInRoleAsync(User, "Buyer");
+            bool IsSeller = await _userManager.IsInRoleAsync(User, "Seller");
+            if (isBuyer)
+            {
+                var Buyer = await _buyerRepository.GetBuyerIdByUserId(userId);
+                Buyer.IsDeleted = true;
+                await _buyerRepository.SaveChangesAsync ();
+            }
+            if (IsSeller)
+            {
+                var Seller = await _sellerRepository.GetSellerIdByUserId(userId);
+                Seller.IsDeleted = true;
+                await _sellerRepository.SaveChangesAsync();
+            }
+            return new ApiResponseDto<string>
+            {
+                IsSuccess = true,
+                StatusCode = 200,
+                ErrorCode = "",
+                Data = null,
+                Message = "User Deleted Succesfuly"
+            };
+        }
+    }
+}
