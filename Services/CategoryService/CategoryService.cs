@@ -1,4 +1,5 @@
 ﻿using WebApplication1.DTOS.Request_DTOs;
+using WebApplication1.DTOS.Request_DTOs.Category;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.DTOS.Shared.RequestDto;
 using WebApplication1.DTOS.Shared.Response_DTOs;
@@ -18,11 +19,11 @@ namespace WebApplication1.Services.CategoryService
             _categoryRepository = categoryRepository;
         }
 
-        public async Task<ApiResponseDto<CategoryResponseDto>> CreateCategoryAsync(CreateCategoryRequestDto dto)
+        public async Task<ApiResponseDto<CategoryResponseDto>> CreateCategoryAsync(CreateCategoryRequestDto createCategoryRequestDto)
         {
             var allCategories = await _categoryRepository.GetAllAsync();
 
-            if (allCategories.Any(c => c.CategoryName.ToLower() == dto.CategoryName.ToLower()))
+            if (allCategories.Any(c => c.CategoryName.ToLower() == createCategoryRequestDto.CategoryName.ToLower()))
             {
                 return new ApiResponseDto<CategoryResponseDto>
                 {
@@ -34,9 +35,9 @@ namespace WebApplication1.Services.CategoryService
                 };
             }
 
-            if (dto.ParentCategoryId.HasValue)
+            if (createCategoryRequestDto.ParentCategoryId.HasValue)
             {
-                var parent = await _categoryRepository.GetByIdAsync(dto.ParentCategoryId.Value);
+                var parent = await _categoryRepository.GetByIdAsync(createCategoryRequestDto.ParentCategoryId.Value);
                 if (parent == null)
                 {
                     return new ApiResponseDto<CategoryResponseDto>
@@ -52,8 +53,8 @@ namespace WebApplication1.Services.CategoryService
 
             var category = new Category
             {
-                CategoryName = dto.CategoryName,
-                ParentCategoryId = dto.ParentCategoryId
+                CategoryName = createCategoryRequestDto.CategoryName,
+                ParentCategoryId = createCategoryRequestDto.ParentCategoryId
             };
 
             await _categoryRepository.AddAsync(category);
@@ -74,7 +75,7 @@ namespace WebApplication1.Services.CategoryService
             };
         }
 
-        public async Task<ApiResponseDto<CategoryResponseDto>> UpdateCategoryAsync(CreateCategoryRequestDto dto, int categoryId)
+        public async Task<ApiResponseDto<CategoryResponseDto>> UpdateCategoryAsync(UpdateCategoryRequestDto updateCategoryRequestDto, int categoryId)
         {
             var category = await _categoryRepository.GetByIdAsync(categoryId);
 
@@ -90,7 +91,7 @@ namespace WebApplication1.Services.CategoryService
                 };
             }
 
-            if (dto.ParentCategoryId.HasValue && dto.ParentCategoryId.Value == categoryId)
+            if (updateCategoryRequestDto.ParentCategoryId.HasValue && updateCategoryRequestDto.ParentCategoryId.Value == categoryId)
             {
                 return new ApiResponseDto<CategoryResponseDto>
                 {
@@ -103,7 +104,7 @@ namespace WebApplication1.Services.CategoryService
             }
 
             var allCategories = await _categoryRepository.GetAllAsync();
-            if (allCategories.Any(c => c.CategoryName.ToLower() == dto.CategoryName.ToLower() && c.CategoryId != categoryId))
+            if (allCategories.Any(c => c.CategoryName.ToLower() == updateCategoryRequestDto.CategoryName.ToLower() && c.CategoryId != categoryId))
             {
                 return new ApiResponseDto<CategoryResponseDto>
                 {
@@ -115,9 +116,9 @@ namespace WebApplication1.Services.CategoryService
                 };
             }
 
-            if (dto.ParentCategoryId.HasValue)
+            if (updateCategoryRequestDto.ParentCategoryId.HasValue)
             {
-                var parent = await _categoryRepository.GetByIdAsync(dto.ParentCategoryId.Value);
+                var parent = await _categoryRepository.GetByIdAsync(updateCategoryRequestDto.ParentCategoryId.Value);
                 if (parent == null)
                 {
                     return new ApiResponseDto<CategoryResponseDto>
@@ -131,8 +132,8 @@ namespace WebApplication1.Services.CategoryService
                 }
             }
 
-            category.CategoryName = dto.CategoryName;
-            category.ParentCategoryId = dto.ParentCategoryId;
+            category.CategoryName = updateCategoryRequestDto.CategoryName;
+            category.ParentCategoryId = updateCategoryRequestDto.ParentCategoryId;
 
             _categoryRepository.Update(category);
             await _categoryRepository.SaveChangesAsync();

@@ -1,16 +1,22 @@
-﻿using WebApplication1.Entitys;
+﻿using System.ComponentModel.DataAnnotations;
+using WebApplication1.Entitys;
 
-namespace WebApplication1.DTOS.Response_DTOs
+namespace WebApplication1.DTOS.Request_DTOs
 {
-    public class CouponResponseDto
+    public class UpdateCouponRequestDto
     {
-        public required int CouponId { get; set; }
-        public required string CouponCode { get; set; }
+        [Required]
         public required DiscountType DiscountType { get; set; }
+
+        [Required]
         public required decimal DiscountValue { get; set; }
+
+        [Required]
         public required DateTime StartDate { get; set; }
+
+        [Required]
         public required DateTime EndDate { get; set; }
+
         public int? UsageLimit { get; set; }
-        public int? UsedCount { get; set; }
     }
 }

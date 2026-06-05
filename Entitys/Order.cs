@@ -19,8 +19,11 @@ namespace WebApplication1.Entitys
 
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public decimal? DiscountAmount { get; set; } = null;
+        [Required]
+        public required decimal TotalAmount { get; set; }
+        [Required]
+        public required string Status { get; set; } = "Pending";
 
-       
         [ForeignKey(nameof(BuyerId))]
         public Buyer Buyer { get; set; } = null!;
         [ForeignKey(nameof(AddressId))]

@@ -22,5 +22,15 @@ namespace WebApplication1.Repository.SpecificRepository.OrderRepository
                 .FirstOrDefaultAsync();
             return order;
         }
+        public async Task<IEnumerable<Order>> GetOrdersListByBuyerIdAsync(int buyerId)
+        {
+            return await _AppDbcontext.Orders
+                .Where(o => o.BuyerId == buyerId && !o.IsDeleted)
+                .Include(o => o.Address)
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.ProductVariant)
+                .ThenInclude(pv => pv.Product)
+                .ToListAsync();
+        }
     }
 }

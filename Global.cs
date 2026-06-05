@@ -1,2 +1,2 @@
 ﻿global using WebApplication1.Entities;
-using Microsoft.AspNetCore.Identity;
+global using Microsoft.AspNetCore.Identity;

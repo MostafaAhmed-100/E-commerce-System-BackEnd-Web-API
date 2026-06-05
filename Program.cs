@@ -1,23 +1,36 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using WebApplication1;
 using WebApplication1.Authentication;
+using WebApplication1.Data;
 using WebApplication1.Entitys;
-using WebApplication1.Repository.Implementation;
-using WebApplication1.Repository.Interface;
+using WebApplication1.Repository.GenericRepository;
+using WebApplication1.Repository.SpecificRepository.AddressRepository;
+using WebApplication1.Repository.SpecificRepository.BuyerRepository;
+using WebApplication1.Repository.SpecificRepository.CartRepository;
+using WebApplication1.Repository.SpecificRepository.CategoryRepository;
+using WebApplication1.Repository.SpecificRepository.CategoryRepository.Interface;
+using WebApplication1.Repository.SpecificRepository.CouponRepository;
+using WebApplication1.Repository.SpecificRepository.OrderRepository;
+using WebApplication1.Repository.SpecificRepository.ProductRepository;
+using WebApplication1.Repository.SpecificRepository.SellerRepository;
+using WebApplication1.Services.AccountService;
+using WebApplication1.Services.AddressService;
+using WebApplication1.Services.AuthService;
+using WebApplication1.Services.CartService;
+using WebApplication1.Services.CategoryService;
+using WebApplication1.Services.CouponService;
 using WebApplication1.Services.Implementation;
 using WebApplication1.Services.Interface;
+using WebApplication1.Services.OrderService;
+using WebApplication1.Services.ProductService;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Database Configuration
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. Identity Configuration (النظيفة اللي بتدعم الرولز من غير تعارض)
 builder.Services.AddIdentity<User, IdentityRole<int>>(options => {
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
@@ -32,9 +45,8 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options => {
     options.Lockout.MaxFailedAccessAttempts = 10;
 })
 .AddEntityFrameworkStores<AppDbContext>()
-.AddDefaultTokenProviders(); // دي بنضيفها عشان لو حبيت تعمل Reset Password بعدين
+.AddDefaultTokenProviders();
 
-// 3. JWT Settings & Authentication
 builder.Services.Configure<JWT>(builder.Configuration.GetSection("Jwt"));
 
 var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
@@ -60,68 +72,75 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 4. Dependency Injection (Services & Repositories)
-builder.Services.AddScoped<IFileServices, LocalFileService>();
-builder.Services.AddScoped<ILoginAndRegisterRepository, loginAndRegisterRepository>();
-builder.Services.AddScoped<ILoginAndRegisterService, LoginAndRegisterService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<ICartRepository, CartRepository>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<ICartService, CartService>();
-builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-builder.Services.AddScoped<IOrderService, OrderService>();
+//// 4. Dependency Injection (Services & Repositories)
+    builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
-// 5. Controllers & Swagger
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "E-Commerce API",
-        Version = "v1"
-    });
+    //// 2. Specific Repositories
+    builder.Services.AddScoped<IAddressRepository, AddressRepository>();
+    builder.Services.AddScoped<IBuyerRepository, BuyerRepository>();
+    builder.Services.AddScoped<ICartRepository, CartRepository>();
+    builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+    builder.Services.AddScoped<ICouponRepository, CouponRepository>();
+    builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+    builder.Services.AddScoped<IProductRepository, ProductRepository>();
+    builder.Services.AddScoped<ISellerRepository, SellerRepository>();
 
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    //// 3. Services
+    builder.Services.AddScoped<IAccountService, AccountService>();
+    builder.Services.AddScoped<IAddressService, AddressService>();
+    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<ICartService, CartService>();
+    builder.Services.AddScoped<ICategoryService, CategoryService>();
+    builder.Services.AddScoped<ICouponService, CouponService>();
+    builder.Services.AddScoped<IOrderService, OrderService>();
+    builder.Services.AddScoped<IProductService, ProductService>();
+
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
     {
-        Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Enter 'Bearer' [space] and then your valid token."
-    });
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-    {
+        options.SwaggerDoc("V2", new Microsoft.OpenApi.Models.OpenApiInfo
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            Title = "E-Commerce API",
+            Version = "V2"
+        });
+
+        options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+            Scheme = "Bearer",
+            BearerFormat = "JWT",
+            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            Description = "Enter 'Bearer' [space] and then your valid token."
+        });
+        options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+        {
             {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
                 {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            new string[] {}
-        }
+                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                    {
+                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                new string[] {}
+            }
+        });
     });
-});
 
-var app = builder.Build();
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1"));
-}
+    var app = builder.Build();
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/V2/swagger.json", "My API V2"));
+    }
 
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();  
+    app.UseHttpsRedirection();
+    app.UseAuthentication();
+    app.UseAuthorization();  
 
-app.MapControllers();
+    app.MapControllers();
 
-app.Run();
+    app.Run();

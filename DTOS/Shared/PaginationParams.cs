@@ -1,4 +1,4 @@
-﻿namespace WebApplication1.DTOS.Request_DTOs
+﻿namespace WebApplication1.DTOS.Shared
 {
     public class PaginationParams
     {

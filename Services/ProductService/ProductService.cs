@@ -106,9 +106,11 @@ namespace WebApplication1.Services.ProductService
             };
         }
 
-        public async Task<ApiResponseDto<ProductResponseDto>> UpdateProductAsync(CreateProductRequestDto createProductRequestDto, int SellerId, int ProductId)
+        public async Task<ApiResponseDto<ProductResponseDto>> UpdateProductAsync(UpdateProductRequestDto updateProductRequestDto, int SellerId, int ProductId)
         {
-            var product = await _productRepository.GetByIdAsync(ProductId);
+
+            var product = await _productRepository.GetProductWithVariantsAsync(ProductId);
+
             if (product == null || product.IsDeleted)
             {
                 return new ApiResponseDto<ProductResponseDto>
@@ -133,7 +135,7 @@ namespace WebApplication1.Services.ProductService
                 };
             }
 
-            var category = await _categoryRepository.GetByIdAsync(createProductRequestDto.CategoryId);
+            var category = await _categoryRepository.GetByIdAsync(updateProductRequestDto.CategoryId);
             if (category == null)
             {
                 return new ApiResponseDto<ProductResponseDto>
@@ -146,20 +148,57 @@ namespace WebApplication1.Services.ProductService
                 };
             }
 
-            product.ProductName = createProductRequestDto.ProductName;
-            product.ProductDescription = createProductRequestDto.ProductDescription;
-            product.CategoryId = createProductRequestDto.CategoryId;
+            product.ProductName = updateProductRequestDto.ProductName;
+            product.ProductDescription = updateProductRequestDto.ProductDescription;
+            product.CategoryId = updateProductRequestDto.CategoryId;
 
-            product.ProductVariants = createProductRequestDto.Variants.Select(v => new ProductVariant
+            product.ProductVariants ??= new List<ProductVariant>();
+
+            var incomingVariantIds = updateProductRequestDto.Variants
+                .Where(v => v.VariantId.HasValue)
+                .Select(v => v.VariantId.Value)
+                .ToList();
+
+
+            var variantsToRemove = product.ProductVariants
+                .Where(v => !incomingVariantIds.Contains(v.ProductVariantId))
+                .ToList();
+
+            foreach (var variant in variantsToRemove)
             {
-                SKU = v.SKU,
-                Price = v.Price,
-                QuantityInStock = v.QuantityInStock,
-                Color = v.Color ?? "",
-                Size = v.Size ?? "",
-                Discount = 0,
-                ReservedQuantity = 0
-            }).ToList();
+                product.ProductVariants.Remove(variant);
+            }
+
+            foreach (var incomingVariant in updateProductRequestDto.Variants)
+            {
+                if (incomingVariant.VariantId.HasValue)
+                {
+                    var existingVariant = product.ProductVariants
+                        .FirstOrDefault(v => v.ProductVariantId == incomingVariant.VariantId.Value);
+
+                    if (existingVariant != null)
+                    {
+                        existingVariant.SKU = incomingVariant.SKU;
+                        existingVariant.Price = incomingVariant.Price;
+                        existingVariant.QuantityInStock = incomingVariant.QuantityInStock;
+                        existingVariant.Color = incomingVariant.Color ?? "";
+                        existingVariant.Size = incomingVariant.Size ?? "";
+                    }
+                }
+                else
+                {
+                    product.ProductVariants.Add(new ProductVariant
+                    {
+                        SKU = incomingVariant.SKU,
+                        Price = incomingVariant.Price,
+                        QuantityInStock = incomingVariant.QuantityInStock,
+                        Color = incomingVariant.Color ?? "",
+                        Size = incomingVariant.Size ?? "",
+                        Discount = 0,
+                        ReservedQuantity = 0
+                    });
+                }
+            }
 
             _productRepository.Update(product);
             await _productRepository.SaveChangesAsync();
@@ -278,6 +317,51 @@ namespace WebApplication1.Services.ProductService
                         Size = v.Size
                     }).ToList() ?? new List<ProductVariantResponseDto>()
                 }
+            };
+        }
+        public async Task<ApiResponseDto<IEnumerable<ProductResponseDto>>> GetOutOfStockProductsAsync(int SellerId)
+        {
+            var allOutOfStock = await _productRepository.GetOutOfStockProductsAsync();
+
+            var sellerOutOfStockProducts = allOutOfStock
+                .Where(p => p.SellerId == SellerId && !p.IsDeleted)
+                .ToList();
+
+            var seller = await _sellerRepository.GetByIdAsync(SellerId);
+            var mappedData = new List<ProductResponseDto>();
+
+            foreach (var product in sellerOutOfStockProducts)
+            {
+                var category = await _categoryRepository.GetByIdAsync(product.CategoryId);
+
+                mappedData.Add(new ProductResponseDto
+                {
+                    ProductId = product.ProductId,
+                    ProductName = product.ProductName,
+                    ProductDescription = product.ProductDescription,
+                    CategoryId = product.CategoryId,
+                    CategoryName = category?.CategoryName ?? "Unknown",
+                    SellerId = product.SellerId,
+                    SellerStoreName = seller?.StoreName ?? "Unknown",
+                    Variants = product.ProductVariants?.Select(v => new ProductVariantResponseDto
+                    {
+                        VariantId = v.ProductVariantId,
+                        SKU = v.SKU,
+                        Price = v.Price,
+                        IsAvailable = v.QuantityInStock > 0,
+                        Color = v.Color,
+                        Size = v.Size
+                    }).ToList() ?? new List<ProductVariantResponseDto>()
+                });
+            }
+
+            return new ApiResponseDto<IEnumerable<ProductResponseDto>>
+            {
+                IsSuccess = true,
+                StatusCode = 200,
+                ErrorCode = "",
+                Message = "Out of stock products retrieved successfully.",
+                Data = mappedData
             };
         }
 

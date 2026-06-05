@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using WebApplication1.Constants;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.Entitys;
@@ -72,9 +73,9 @@ namespace WebApplication1.Services.AuthService
                 };
             }
             var userRoles = await _userManager.GetRolesAsync(User);
-            var primaryRole = userRoles.FirstOrDefault() ?? "Buyer";
+            var primaryRole = userRoles.FirstOrDefault() ?? AppRoles.Buyer;
             int profileId = 0;
-            if (primaryRole == "Buyer")
+            if (primaryRole == AppRoles.Buyer)
             {
                 var buyer = await _buyerRepository.GetBuyerIdByUserId(User.Id);
                 if (buyer == null)
@@ -90,7 +91,7 @@ namespace WebApplication1.Services.AuthService
                 }
                 profileId = buyer.BuyerId;
             }
-            else if (primaryRole == "Seller")
+            else if (primaryRole == AppRoles.Seller)
             {
                 var seller = await _sellerRepository.GetSellerIdByUserId(User.Id);
                 if (seller == null)
@@ -167,11 +168,11 @@ namespace WebApplication1.Services.AuthService
             await _buyerRepository.AddAsync(Buyer);
             await _buyerRepository.SaveChangesAsync();
 
-            if (!await _roleManager.RoleExistsAsync("Buyer"))
+            if (!await _roleManager.RoleExistsAsync(AppRoles.Buyer))
             {
-                await _roleManager.CreateAsync(new IdentityRole<int>("Buyer"));
+                await _roleManager.CreateAsync(new IdentityRole<int>(AppRoles.Buyer));
             }
-            await _userManager.AddToRoleAsync(user, "Buyer");
+            await _userManager.AddToRoleAsync(user, AppRoles.Buyer);
             return new ApiResponseDto<AuthResponseDto>
             {
                 IsSuccess = true,
@@ -179,10 +180,10 @@ namespace WebApplication1.Services.AuthService
                 ErrorCode = "",
                 Data = new AuthResponseDto
                 {
-                    Token = GenerateJwtToken("Buyer", user, Buyer.BuyerId),
+                    Token = GenerateJwtToken(AppRoles.Buyer, user, Buyer.BuyerId),
                     Expiration = DateTime.UtcNow.AddHours(24),
                     Email = user.Email,
-                    Role = "Buyer"
+                    Role = AppRoles.Buyer
                 },
                 Message = "User registered successfully as a Buyer."
             };
@@ -233,11 +234,11 @@ namespace WebApplication1.Services.AuthService
                     Message = $"Failed to create user: {errors}"
                 };
             }
-            if (!await _roleManager.RoleExistsAsync("Admin"))
+            if (!await _roleManager.RoleExistsAsync(AppRoles.Admin))
             {
-                await _roleManager.CreateAsync(new IdentityRole<int>("Admin"));
+                await _roleManager.CreateAsync(new IdentityRole<int>(AppRoles.Admin));
             }
-            await _userManager.AddToRoleAsync(user, "Admin");
+            await _userManager.AddToRoleAsync(user, AppRoles.Admin);
             return new ApiResponseDto<AuthResponseDto>
             {
                 IsSuccess = true,
@@ -245,10 +246,10 @@ namespace WebApplication1.Services.AuthService
                 ErrorCode = "",
                 Data = new AuthResponseDto
                 {
-                    Token = GenerateJwtToken("Admin", user, 0),
+                    Token = GenerateJwtToken(AppRoles.Admin, user, 0),
                     Expiration = DateTime.UtcNow.AddHours(100),
                     Email = user.Email,
-                    Role = "Admin"
+                    Role = AppRoles.Admin
                 },
                 Message = "User registered successfully as a Admin."
             };
@@ -289,9 +290,9 @@ namespace WebApplication1.Services.AuthService
                     Message = $"Failed to create user: {errors}"
                 };
             }
-            if (!await _roleManager.RoleExistsAsync("Seller"))
+            if (!await _roleManager.RoleExistsAsync(AppRoles.Seller))
             {
-                await _roleManager.CreateAsync(new IdentityRole<int>("Seller"));
+                await _roleManager.CreateAsync(new IdentityRole<int>(AppRoles.Seller));
             }
             var Seller = new Seller
             {
@@ -307,7 +308,7 @@ namespace WebApplication1.Services.AuthService
             };
             await _sellerRepository.AddAsync(Seller);
             await _sellerRepository.SaveChangesAsync();
-            await _userManager.AddToRoleAsync(user, "Seller");
+            await _userManager.AddToRoleAsync(user, AppRoles.Seller);
             return new ApiResponseDto<AuthResponseDto>
             {
                 IsSuccess = true,
@@ -315,10 +316,10 @@ namespace WebApplication1.Services.AuthService
                 ErrorCode = "",
                 Data = new AuthResponseDto
                 {
-                    Token = GenerateJwtToken("Seller", user, Seller.SellerId),
+                    Token = GenerateJwtToken(AppRoles.Seller, user, Seller.SellerId),
                     Expiration = DateTime.UtcNow.AddHours(30),
                     Email = user.Email,
-                    Role = "Seller"
+                    Role = AppRoles.Seller
                 },
                 Message = "User registered successfully as a Seller."
             };

@@ -10,6 +10,7 @@ namespace WebApplication1.Repository.SpecificRepository.ProductRepository
 
         Task<IEnumerable<Product>> SearchProductsAsync(string searchTerm);
 
+        Task<Product?> GetProductWithVariantsAsync(int ProductId);
         Task<IEnumerable<Product>> GetOutOfStockProductsAsync();
     }
 }

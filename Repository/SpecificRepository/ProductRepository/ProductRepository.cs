@@ -42,7 +42,12 @@ namespace WebApplication1.Repository.SpecificRepository.ProductRepository
                 .ToListAsync();
             return outOfStockProducts;
         }
-
+        public async Task<Product?> GetProductWithVariantsAsync(int ProductId)
+        {
+            return await _AppDbcontext.Products
+                .Include(p => p.ProductVariants)
+                .FirstOrDefaultAsync(p => p.ProductId == ProductId && !p.IsDeleted);
+        }
 
     }
 }

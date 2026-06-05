@@ -9,11 +9,13 @@ namespace WebApplication1.Services.ProductService
     {
         Task<ApiResponseDto<ProductResponseDto>> CreateProductAsync(CreateProductRequestDto createProductRequestDto ,int SellerId);
 
-        Task<ApiResponseDto<ProductResponseDto>> UpdateProductAsync (CreateProductRequestDto createProductRequestDto,int SellerId , int ProductId);
+        Task<ApiResponseDto<ProductResponseDto>> UpdateProductAsync (UpdateProductRequestDto updateProductRequestDto,int SellerId , int ProductId);
 
         Task<ApiResponseDto<string>> DeleteProductAsync (int SellerId ,int ProductId);
         
         Task<ApiResponseDto<ProductResponseDto>> GetProductByIdAsync (int ProductId);
+
+        Task<ApiResponseDto<IEnumerable<ProductResponseDto>>> GetOutOfStockProductsAsync(int SellerId);
 
         Task<ApiResponseDto<PaginatedResponseDto<ProductResponseDto>>> GetAllProductsAsync(int? CategoryId , PaginationRequestDto paginationRequestDto);
     }
