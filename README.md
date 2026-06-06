@@ -230,10 +230,10 @@ Mentorship:
 I would like to express my sincere gratitude to
 | Name | linkidin |
 |---|---|
-| AbdALlatif Hossni | https://www.linkedin.com/in/abdallatif-hossni-9217091b9/
-| Omar Ahmed | https://www.linkedin.com/in/omar-ahmed-33a467298/
----
+| AbdALlatif Hossni | https://www.linkedin.com/in/abdallatif-hossni-9217091b9/|
+| Omar Ahmed | https://www.linkedin.com/in/omar-ahmed-33a467298/|
  for their valuable guidance and mentorship throughout the development of this project. Their insights and technical advice were instrumental in helping me overcome challenges and refine the project architecture.
+---
 
 ## 📜 License
 
