@@ -1,4 +1,5 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
@@ -10,12 +11,13 @@ using WebApplication1.Entitys;
 using WebApplication1.Repository.SpecificRepository.BuyerRepository;
 using WebApplication1.Repository.SpecificRepository.SellerRepository;
 using WebApplication1.Services.Interface;
+
 namespace WebApplication1.Services.AuthService
 {
     public class AuthService : IAuthService
     {
         private readonly UserManager<User> _userManager;
-        private readonly RoleManager<IdentityRole<int>> _roleManager;
+        private readonly RoleManager<Role> _roleManager;
         private readonly IConfiguration _configuration;
         private readonly IBuyerRepository _buyerRepository;
         private readonly ISellerRepository _sellerRepository;
@@ -23,7 +25,7 @@ namespace WebApplication1.Services.AuthService
         public AuthService
         (
             UserManager<User> userManager,
-            RoleManager<IdentityRole<int>> roleManager,
+            RoleManager<Role> roleManager,
             IConfiguration configuration,
             IBuyerRepository buyerRepository,
             ISellerRepository sellerRepository
@@ -35,6 +37,7 @@ namespace WebApplication1.Services.AuthService
             _buyerRepository = buyerRepository;
             _sellerRepository = sellerRepository;
         }
+
         private string GenerateJwtToken(string role, User user, int profileId)
         {
             var Clames = new List<Claim>
@@ -58,6 +61,7 @@ namespace WebApplication1.Services.AuthService
             var JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
             return JwtSecurityTokenHandler.WriteToken(Token);
         }
+
         public async Task<ApiResponseDto<AuthResponseDto>> LoginAsync(LoginRequestDto loginRequestDto)
         {
             var User = await _userManager.FindByEmailAsync(loginRequestDto.Email);
@@ -77,7 +81,7 @@ namespace WebApplication1.Services.AuthService
             int profileId = 0;
             if (primaryRole == AppRoles.Buyer)
             {
-                var buyer = await _buyerRepository.GetBuyerIdByUserId(User.Id);
+                var buyer = await _buyerRepository.GetBuyerByUserId(User.Id);
                 if (buyer == null)
                 {
                     return new ApiResponseDto<AuthResponseDto>
@@ -170,7 +174,13 @@ namespace WebApplication1.Services.AuthService
 
             if (!await _roleManager.RoleExistsAsync(AppRoles.Buyer))
             {
-                await _roleManager.CreateAsync(new IdentityRole<int>(AppRoles.Buyer));
+                await _roleManager.CreateAsync(new Role
+                {
+                    Name = AppRoles.Buyer,
+                    Description = "Standard buyer role",
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true
+                });
             }
             await _userManager.AddToRoleAsync(user, AppRoles.Buyer);
             return new ApiResponseDto<AuthResponseDto>
@@ -236,7 +246,13 @@ namespace WebApplication1.Services.AuthService
             }
             if (!await _roleManager.RoleExistsAsync(AppRoles.Admin))
             {
-                await _roleManager.CreateAsync(new IdentityRole<int>(AppRoles.Admin));
+                await _roleManager.CreateAsync(new Role
+                {
+                    Name = AppRoles.Admin,
+                    Description = "System Administrator role",
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true
+                });
             }
             await _userManager.AddToRoleAsync(user, AppRoles.Admin);
             return new ApiResponseDto<AuthResponseDto>
@@ -292,7 +308,13 @@ namespace WebApplication1.Services.AuthService
             }
             if (!await _roleManager.RoleExistsAsync(AppRoles.Seller))
             {
-                await _roleManager.CreateAsync(new IdentityRole<int>(AppRoles.Seller));
+                await _roleManager.CreateAsync(new Role
+                {
+                    Name = AppRoles.Seller,
+                    Description = "Seller role for store owners",
+                    CreatedAt = DateTime.UtcNow,
+                    IsActive = true
+                });
             }
             var Seller = new Seller
             {

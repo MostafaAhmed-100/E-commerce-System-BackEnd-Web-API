@@ -1,96 +1,71 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using WebApplication1.DTOS;
-using WebApplication1.Models;
-using WebApplication1.Services.Interface;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using WebApplication1.Constants;
+using WebApplication1.DTOS.Request_DTOs;
+using WebApplication1.Services.CartService;
 
 namespace WebApplication1.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController , Authorize(Roles = AppRoles.Buyer)]
     public class CartController : ControllerBase
     {
-        ResponsModel response = new();
         private readonly ICartService _cartService;
 
         public CartController(ICartService cartService)
         {
             _cartService = cartService;
         }
-
-        [HttpGet("Get-All")]
-        public async Task<IActionResult> GetAll()
+        [HttpGet("My-Cart")]
+        public async Task<IActionResult> GetMyCart()
         {
-            var carts = await _cartService.GetAllAsync();
-            response.Status = true;
-            response.Data = carts;
-            response.StatusMessage = "";
-            return Ok(response);
+            var BuyerId = Convert.ToInt32(User.FindFirstValue("ProfileId"));
+
+            var Result = await _cartService.GetCartBybuyerId(BuyerId);
+
+            return StatusCode(Result.StatusCode, Result);
         }
 
-        [HttpGet("Get-By-Id/{Id:int}")]
-        public async Task<IActionResult> GetById(int Id)
+        [HttpPost("Add-Item")]
+        public async Task<IActionResult> AddToCart([FromBody] AddToCartRequestDto requestDto)
         {
-            var result = await _cartService.GetByIdAsync(Id);
-            if (result == null)
-            {
-                response.Status = false;
-                response.Data = result;
-                response.StatusMessage = "No Data Was Found";
-            }
-            else
-            {
-                response.Status = true;
-                response.Data = result;
-                response.StatusMessage = "";
-            }
-            return Ok(response);
+            var BuyerId = Convert.ToInt32(User.FindFirstValue("ProfileId"));
+
+            var Result = await _cartService.AddToCart(BuyerId, requestDto);
+
+            return StatusCode(Result.StatusCode, Result);
         }
 
-        [HttpPost("Create-Cart")]
-        public async Task<IActionResult> CreateCart(CartDTO cartDTO)
+        [HttpPut("Update-Quantity/{variantId}")]
+        public async Task<IActionResult> UpdateQuantity([FromRoute] int variantId, [FromBody] UpdateCartItemQuantityRequestDto requestDto)
         {
-            var create = await _cartService.CreateAsync(cartDTO);
-            response.Status = true;
-            response.Data = create;
-            response.StatusMessage = "Cart Created Successfully";
-            return Ok(response);
+            var BuyerId = Convert.ToInt32(User.FindFirstValue("ProfileId"));
+
+            var Result = await _cartService.UpdateItemQuantity( BuyerId ,variantId , requestDto);
+
+            return StatusCode(Result.StatusCode, Result);
         }
 
-        [HttpPut("Update-Cart/{Id:int}")]
-        public async Task<IActionResult> UpdateCart(int Id, CartDTO cart)
+        [HttpDelete("Remove-Item/{variantId}")]
+        public async Task<IActionResult> RemoveItem([FromRoute] int variantId)
         {
-            var result = await _cartService.UpdateByIdAsync(Id, cart);
-            if (result == null)
-            {
-                response.Status = false;
-                response.Data = result;
-                response.StatusMessage = "No Data Was Found";
-            }
-            else
-            {
-                response.Status = true;
-                response.Data = result;
-                response.StatusMessage = "Cart Updated Successfully";
-            }
-            return Ok(response);
+            var BuyerId = Convert.ToInt32(User.FindFirstValue("ProfileId"));
+
+            var Result = await _cartService.RemoveFromCart(BuyerId, variantId);
+
+            return StatusCode(Result.StatusCode, Result);
         }
 
-        [HttpDelete("Delete-By-Id/{Id:int}")]
-        public async Task<IActionResult> DeleteById(int Id)
+        [HttpDelete("Clear-Cart")]
+        public async Task<IActionResult> ClearCart()
         {
-            var deleted = await _cartService.DeleteByIdAsync(Id);
-            if (deleted == null || deleted == false)
-            {
-                response.Status = false;
-                response.StatusMessage = "No Data Was Found";
-            }
-            else
-            {
-                response.Status = true;
-                response.Data = deleted;
-                response.StatusMessage = "Cart Deleted Successfully";
-            }
-            return Ok(response);
+            var BuyerId = Convert.ToInt32(User.FindFirstValue("ProfileId"));
+
+            var Result = await _cartService.ClearCart(BuyerId);
+
+            return StatusCode(Result.StatusCode, Result);
         }
     }
 }

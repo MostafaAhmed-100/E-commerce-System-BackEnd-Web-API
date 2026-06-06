@@ -1,0 +1,47 @@
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using WebApplication1.DTOS.Request_DTOs;
+using WebApplication1.Services.Interface;
+
+namespace WebApplication1.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class AuthController : ControllerBase
+    {
+        private readonly IAuthService _authService;
+
+        public AuthController(IAuthService authService)
+        {
+            _authService = authService;
+        }
+
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequestDto requestDto)
+        {
+            var Result = await _authService.LoginAsync(requestDto);
+            return StatusCode(Result.StatusCode, Result);
+        }
+
+        [HttpPost("Register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequestDto requestDto)
+        {
+            var Result = await _authService.RegisterAsync(requestDto);
+            return StatusCode(Result.StatusCode, Result);
+        }
+
+        [HttpPost("Register-Seller")]
+        public async Task<IActionResult> RegisterSeller([FromBody] RegisterSellerRequestDto requestDto)
+        {
+            var Result = await _authService.RegisterSellerAsync(requestDto);
+            return StatusCode(Result.StatusCode, Result);
+        }
+
+        [HttpPost("Register-Admin")]
+        public async Task<IActionResult> RegisterAdmin([FromBody] RegisterAdminRequestDto requestDto)
+        {
+            var Result = await _authService.RegisterAdminAsync(requestDto);
+            return StatusCode(Result.StatusCode, Result);
+        }
+    }
+}

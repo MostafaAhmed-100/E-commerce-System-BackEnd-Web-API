@@ -43,7 +43,7 @@ namespace WebApplication1.Services.AccountService
             bool IsSeller = await _userManager.IsInRoleAsync(User, "Seller");
             if (isBuyer)
             {
-                var Buyer = await _buyerRepository.GetBuyerIdByUserId(userId);
+                var Buyer = await _buyerRepository.GetBuyerByUserId(userId);
                 Buyer.IsDeleted = true;
                 await _buyerRepository.SaveChangesAsync ();
             }

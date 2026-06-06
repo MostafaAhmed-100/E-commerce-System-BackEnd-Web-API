@@ -1,91 +1,60 @@
-﻿using Azure;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WebApplication1.DTOS;
-using WebApplication1.Models;
-using WebApplication1.Services.Interface;
+using WebApplication1.Constants;
+using WebApplication1.DTOS.Request_DTOs;
+using WebApplication1.DTOS.Request_DTOs.Category;
+using WebApplication1.DTOS.Shared.RequestDto;
+using WebApplication1.Services.CategoryService;
 
 namespace WebApplication1.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController ]
     public class CategoryController : ControllerBase
     {
-        ResponsModel response = new();
-        private readonly ICategoryService _IcategoryService;
+        private readonly ICategoryService _categoryService;
 
-        public CategoryController(ICategoryService icategoryService)
+        public CategoryController(ICategoryService categoryService)
         {
-            _IcategoryService = icategoryService;
+            _categoryService = categoryService;
+        }
+
+        [HttpPost("Create-Category")]
+        [Authorize(Roles = AppRoles.Admin)]
+        public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryRequestDto requestDto)
+        {
+            var result = await _categoryService.CreateCategoryAsync(requestDto);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPut("Update-Category/{categoryId}")]
+        [Authorize(Roles = AppRoles.Admin)]
+        public async Task<IActionResult> UpdateCategory([FromRoute] int categoryId, [FromBody] UpdateCategoryRequestDto requestDto)
+        {
+            var result = await _categoryService.UpdateCategoryAsync(requestDto, categoryId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpDelete("Delete-Category/{categoryId}")]
+        [Authorize(Roles = AppRoles.Admin)]
+        public async Task<IActionResult> DeleteCategory([FromRoute] int categoryId)
+        {
+            var result = await _categoryService.DeleteCategoryAsync(categoryId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpGet("Get-Category/{categoryId}")]
+        public async Task<IActionResult> GetCategoryById([FromRoute] int categoryId)
+        {
+            var result = await _categoryService.GetCategoryByIdAsync(categoryId);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("Get-All")]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAllCategories([FromQuery] PaginationRequestDto requestDto)
         {
-            var AllCategorys = await _IcategoryService.GetAllAsync();
-            response.Status = true;
-            response.Data = AllCategorys;
-            response.StatusMessage = "";
-            return Ok(response);
-        }
-        [HttpGet("Get-By-Id/{Id:int}")]
-        public async Task<IActionResult>    GetById(int Id)
-        {
-            var Result = await _IcategoryService.GetByIdAsync(Id);
-            if (Result == null)
-            {
-                response.Status = false;
-                response.Data = Result;
-                response.StatusMessage = "No Data Was Found";
-            }
-            else
-            {
-                response.Status = true;
-                response.Data = Result;
-                response.StatusMessage = "";
-            }
-                return Ok(response);
-        }
-        [HttpPost("Create-Category")]
-        public async Task<IActionResult> CreateCategory(CategoryDTO categoryDTO)
-        {
-            var Create = await _IcategoryService.CreateAsync(categoryDTO);
-            response.Status = true;
-            response.Data = Create;
-            return Ok(response);
-        }
-        [HttpPut("Update-Categry/{Id:int}")]
-        public async Task<IActionResult> UpdateCategry(int Id , Category category)
-        {
-            var Result =await _IcategoryService.UpdateByIdAsync(Id, category);
-            if (Result == null)
-            {
-                response.Status = false;
-                response.Data = Result;
-                response.StatusMessage = "No Data Was Found";
-            }
-            else
-            {
-                response.Status = true;
-                response.Data = Result;
-                
-            }
-            return Ok(response);
-        }
-        [HttpDelete("Delete-By-Id/{Id:int}")]
-        public async Task<IActionResult> DeleteById(int Id)
-        {
-            var Deleted = await _IcategoryService.DeleteByIdAsync(Id);
-            if (Deleted == null)
-            {
-                response.Status = false;
-                response.StatusMessage = "No Data Was Found";
-            }
-            else
-            {
-                response.Status = true;
-                response.Data = Deleted;
-            }
-                return Ok(response);
+            var result = await _categoryService.GetAllCategoriesAsync(requestDto);
+            return StatusCode(result.StatusCode, result);
         }
     }
 }

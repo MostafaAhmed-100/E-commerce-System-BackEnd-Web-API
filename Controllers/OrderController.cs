@@ -1,82 +1,72 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WebApplication1.DTOS;
-using WebApplication1.Entities;
-using WebApplication1.Entitys;
-using WebApplication1.Models;
-using WebApplication1.Services.Interface;
+using System.Security.Claims;
+using WebApplication1.Constants;
+using WebApplication1.DTOS.Request_DTOs;
+using WebApplication1.Services.OrderService;
 
 namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class OrderController : ControllerBase
     {
-        ResponsModel response = new();
-        IOrderService _orderService;
+        private readonly IOrderService _orderService;
 
         public OrderController(IOrderService orderService)
         {
             _orderService = orderService;
         }
-        [HttpGet("Get-All")]
-        public async Task<IActionResult> GetAll()
-        {
-            var Orders = await _orderService.GetAllAsync();
-            response.Status = true;
-            response.Data = Orders;
-            return Ok(response);
 
-        }
-        [HttpGet("Get-By-Id/{id:int}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            var OrderById = await _orderService.GetByIdAsync(id);
-            response.Status = true;
-            response.Data = OrderById;
-            return Ok(response);
-        }
         [HttpPost("Create-Order")]
-        public async Task<IActionResult> CreateOrder (OrderDTO orderDTO)
+        [Authorize(Roles = AppRoles.Buyer)]
+        public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequestDto requestDto)
         {
-            var Create = await _orderService.CreateAsync(orderDTO);
-            response.Status = true;
-            response.Data = Create;
-            return Ok(response);
-        }
-        [HttpPut("Update-Order")]
-        public async Task<IActionResult> UpdateOrder(int id , Order order)
-        {
-            var Result = await _orderService.UpdateByIdAsync(id, order);
-            if (Result == null)
-            {
-                response.Status = false;
-                response.Data = Result;
-                response.StatusMessage = "No Data Was Found";
-            }
-            else
-            {
-                response.Status = true;
-                response.Data = Result;
+            var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var buyerId = Convert.ToInt32(User.FindFirstValue("ProfileId"));
 
-            }
-            return Ok(response);
+            var result = await _orderService.CreateOrderAsync(requestDto, buyerId, userId);
+            return StatusCode(result.StatusCode, result);
         }
-        [HttpDelete("Delete-By-Id{Id:int}")]
-        public async Task<IActionResult> DeleteById(int Id)
+
+        [HttpGet("My-Orders")]
+        [Authorize(Roles = AppRoles.Buyer)]
+        public async Task<IActionResult> GetMyOrders()
         {
-            var Deleted = await _orderService.DeleteByIdAsync(Id);
-            if (Deleted == null)
-            {
-                response.Status = false;
-                response.StatusMessage = "No Data Was Found";
-            }
-            else
-            {
-                response.Status = true;
-                response.Data = Deleted;
-            }
-            return Ok(response);
+            var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var buyerId = Convert.ToInt32(User.FindFirstValue("ProfileId"));
+
+            var result = await _orderService.GetOrdersByBuyerIdAsync(buyerId, userId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpGet("Get-Order/{orderId}")]
+        [Authorize(Roles = AppRoles.Buyer)]
+        public async Task<IActionResult> GetOrderById([FromRoute] int orderId)
+        {
+            var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var result = await _orderService.GetOrderByIdAsync(orderId, userId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpDelete("Cancel-Order/{orderId}")]
+        [Authorize(Roles = AppRoles.Buyer)]
+        public async Task<IActionResult> CancelOrder([FromRoute] int orderId)
+        {
+            var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var result = await _orderService.CancelOrderAsync(orderId, userId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPut("Update-Status/{orderId}")]
+        [Authorize(Roles = AppRoles.Admin + "," + AppRoles.Seller)]
+        public async Task<IActionResult> UpdateOrderStatus([FromRoute] int orderId, [FromQuery] string newStatus)
+        {
+            var result = await _orderService.UpdateOrderStatusAsync(orderId, newStatus);
+            return StatusCode(result.StatusCode, result);
         }
     }
 }

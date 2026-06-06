@@ -9,13 +9,13 @@ namespace WebApplication1.Entitys
         public int BuyerId { get; set; }
         [Required]
         public int UserId { get; set; }
-        [Required, MaxLength(10000)]
-        public int LoyaltyPoints { get; set; } = 0;
+        [ MaxLength(10000)]
+        public int? LoyaltyPoints { get; set; } = 0;
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         [Required]
         public bool IsDeleted { get; set; } = false;
-        public  string PaymentGatewayCustomerId { get; set; }
+        public string? PaymentGatewayCustomerId { get; set; }
         [ForeignKey("UserId"), Required]
         public required User User { get; set; }
         public ICollection<Order> Orders { get; set; } = new List<Order>();

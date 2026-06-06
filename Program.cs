@@ -1,37 +1,37 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using WebApplication1.Authentication;
-using WebApplication1.Data;
-using WebApplication1.Entitys;
-using WebApplication1.Repository.GenericRepository;
-using WebApplication1.Repository.SpecificRepository.AddressRepository;
-using WebApplication1.Repository.SpecificRepository.BuyerRepository;
-using WebApplication1.Repository.SpecificRepository.CartRepository;
-using WebApplication1.Repository.SpecificRepository.CategoryRepository;
-using WebApplication1.Repository.SpecificRepository.CategoryRepository.Interface;
-using WebApplication1.Repository.SpecificRepository.CouponRepository;
-using WebApplication1.Repository.SpecificRepository.OrderRepository;
-using WebApplication1.Repository.SpecificRepository.ProductRepository;
-using WebApplication1.Repository.SpecificRepository.SellerRepository;
-using WebApplication1.Services.AccountService;
-using WebApplication1.Services.AddressService;
-using WebApplication1.Services.AuthService;
-using WebApplication1.Services.CartService;
-using WebApplication1.Services.CategoryService;
-using WebApplication1.Services.CouponService;
-using WebApplication1.Services.Implementation;
-using WebApplication1.Services.Interface;
-using WebApplication1.Services.OrderService;
-using WebApplication1.Services.ProductService;
+    using Microsoft.AspNetCore.Authentication.JwtBearer;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.IdentityModel.Tokens;
+    using System.Text;
+    using WebApplication1.Authentication;
+    using WebApplication1.Data;
+    using WebApplication1.Entitys;
+    using WebApplication1.Repository.GenericRepository;
+    using WebApplication1.Repository.SpecificRepository.AddressRepository;
+    using WebApplication1.Repository.SpecificRepository.BuyerRepository;
+    using WebApplication1.Repository.SpecificRepository.CartRepository;
+    using WebApplication1.Repository.SpecificRepository.CategoryRepository;
+    using WebApplication1.Repository.SpecificRepository.CategoryRepository.Interface;
+    using WebApplication1.Repository.SpecificRepository.CouponRepository;
+    using WebApplication1.Repository.SpecificRepository.OrderRepository;
+    using WebApplication1.Repository.SpecificRepository.ProductRepository;
+    using WebApplication1.Repository.SpecificRepository.SellerRepository;
+    using WebApplication1.Services.AccountService;
+    using WebApplication1.Services.AddressService;
+    using WebApplication1.Services.AuthService;
+    using WebApplication1.Services.CartService;
+    using WebApplication1.Services.CategoryService;
+    using WebApplication1.Services.CouponService;
+    using WebApplication1.Services.Implementation;
+    using WebApplication1.Services.Interface;
+    using WebApplication1.Services.OrderService;
+    using WebApplication1.Services.ProductService;
 
-var builder = WebApplication.CreateBuilder(args);
+    var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(options =>
+    builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddIdentity<User, IdentityRole<int>>(options => {
+    builder.Services.AddIdentity<User, Role>(options => {
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
@@ -43,36 +43,36 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options => {
     options.Lockout.AllowedForNewUsers = true;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     options.Lockout.MaxFailedAccessAttempts = 10;
-})
-.AddEntityFrameworkStores<AppDbContext>()
-.AddDefaultTokenProviders();
+    })
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
 
-builder.Services.Configure<JWT>(builder.Configuration.GetSection("Jwt"));
+    builder.Services.Configure<JWT>(builder.Configuration.GetSection("Jwt"));
 
-var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(o =>
-{
-    o.RequireHttpsMetadata = false;
-    o.SaveToken = true;
-    o.TokenValidationParameters = new TokenValidationParameters
+    var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
+    builder.Services.AddAuthentication(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(key)
-    };
-});
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(o =>
+    {
+        o.RequireHttpsMetadata = false;
+        o.SaveToken = true;
+        o.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(key)
+        };
+    });
 
-//// 4. Dependency Injection (Services & Repositories)
+    //// 4. Dependency Injection (Services & Repositories)
     builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
     //// 2. Specific Repositories
@@ -131,10 +131,29 @@ builder.Services.AddAuthentication(options =>
     });
 
     var app = builder.Build();
+
+    app.Use(async (context, next) =>
+    {
+    var watch = System.Diagnostics.Stopwatch.StartNew();
+
+    context.Response.OnStarting(() =>
+    {
+        watch.Stop();
+        context.Response.Headers.Append("X-Response-Time", $"{watch.ElapsedMilliseconds} ms");
+        return Task.CompletedTask;
+    });
+
+        await next();
+    });
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
-        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/V2/swagger.json", "My API V2"));
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/V2/swagger.json", "My API V2");
+
+            c.DisplayRequestDuration();
+        });
     }
 
     app.UseHttpsRedirection();
