@@ -1,4 +1,4 @@
-# 🛒 E-Commerce REST API
+# 🛒 E-Commerce REST API V2
 
 A full-featured E-Commerce backend built with **ASP.NET Core**, **Entity Framework Core**, and **JWT Authentication**. The API supports three roles — Admin, Seller, and Buyer — and covers everything from product management to order processing with coupon support.
 
