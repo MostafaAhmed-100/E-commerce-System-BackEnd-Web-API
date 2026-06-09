@@ -1,4 +1,7 @@
-﻿using WebApplication1.DTOS.Request_DTOs;
+﻿using Hangfire;
+using WebApplication1.BackgroundJobs.OrderJobs;
+using WebApplication1.Constants;
+using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.DTOS.Shared.Response_DTOs;
 using WebApplication1.Entitys;
@@ -139,7 +142,7 @@ namespace WebApplication1.Services.OrderService
                 TotalAmount = finalTotal,
                 DiscountAmount = discountAmount,
                 CouponId = appliedCoupon?.CouponId,
-                Status = "Pending",
+                Status = OrderStatus.Pending,
                 IsDeleted = false,
                 OrderItems = Cart.Items.Select(ci => new OrderItem
                 {
@@ -172,6 +175,9 @@ namespace WebApplication1.Services.OrderService
 
             await _orderRepository.SaveChangesAsync();
 
+            BackgroundJob.Schedule<IOrderBackgroundJobs>(
+           job => job.CheckAndCancelUnpaidOrderAsyn(order.OrderId),
+           TimeSpan.FromMinutes(1));
             return new ApiResponseDto<OrderResponseDto>
             {
                 IsSuccess = true,
@@ -312,8 +318,18 @@ namespace WebApplication1.Services.OrderService
                     Message = "The specified order does not exist."
                 };
             }
-
-            order.Status = newStatus;
+            if (newStatus != OrderStatus.successful || newStatus != OrderStatus.cancelled || newStatus != OrderStatus.Pending)
+            {
+                return new ApiResponseDto<string>
+                {
+                    IsSuccess = false,
+                    StatusCode = 404,
+                    ErrorCode = "STATUS_NOT_FOUND",
+                    Data = null,
+                    Message = "The specified status does not exist. "
+                };
+            }    
+                order.Status = newStatus;
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
 
@@ -356,7 +372,7 @@ namespace WebApplication1.Services.OrderService
                 };
             }
 
-            if (order.Status != "Pending")
+            if (order.Status == OrderStatus.cancelled)
             {
                 return new ApiResponseDto<string>
                 {
@@ -368,7 +384,7 @@ namespace WebApplication1.Services.OrderService
                 };
             }
 
-            order.Status = "Cancelled";
+            order.Status = OrderStatus.cancelled;
 
             foreach (var item in order.OrderItems)
             {
@@ -390,7 +406,7 @@ namespace WebApplication1.Services.OrderService
 
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
-
+           
             return new ApiResponseDto<string>
             {
                 IsSuccess = true,

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.Services.Interface;
 
@@ -7,6 +8,7 @@ namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableRateLimiting("AuthPolicy")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;

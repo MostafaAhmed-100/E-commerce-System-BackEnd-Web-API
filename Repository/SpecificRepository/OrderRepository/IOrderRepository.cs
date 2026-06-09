@@ -5,7 +5,7 @@ namespace WebApplication1.Repository.SpecificRepository.OrderRepository
 {
     public interface IOrderRepository : IGenericRepository<Order>
     {
-        Task<Order?> GetOrderWithDetailsAsync(int orderId, int buyerId);
+        Task<Order?> GetOrderWithDetailsAsync(int orderId, int buyerId); 
 
         Task<IEnumerable<Order>> GetOrdersListByBuyerIdAsync(int buyerId);
     }

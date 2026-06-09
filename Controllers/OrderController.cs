@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using WebApplication1.Constants;
 using WebApplication1.DTOS.Request_DTOs;
@@ -10,6 +11,7 @@ namespace WebApplication1.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
+    [EnableRateLimiting("CheckoutPolicy")]
     public class OrderController : ControllerBase
     {
         private readonly IOrderService _orderService;

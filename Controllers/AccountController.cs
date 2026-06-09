@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using WebApplication1.Services.AccountService;
 
@@ -8,6 +9,7 @@ namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController , Authorize]
+    [EnableRateLimiting("UserActivityPolicy")]
     public class AccountController : ControllerBase
     {
         private readonly IAccountService _accountService;

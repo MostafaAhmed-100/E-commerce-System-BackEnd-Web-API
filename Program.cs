@@ -1,38 +1,43 @@
-    using Microsoft.AspNetCore.Authentication.JwtBearer;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.IdentityModel.Tokens;
-    using System.Text;
-    using WebApplication1.Authentication;
-    using WebApplication1.Data;
-    using WebApplication1.Entitys;
-    using WebApplication1.Repository.GenericRepository;
-    using WebApplication1.Repository.SpecificRepository.AddressRepository;
-    using WebApplication1.Repository.SpecificRepository.BuyerRepository;
-    using WebApplication1.Repository.SpecificRepository.CartRepository;
-    using WebApplication1.Repository.SpecificRepository.CategoryRepository;
-    using WebApplication1.Repository.SpecificRepository.CategoryRepository.Interface;
-    using WebApplication1.Repository.SpecificRepository.CouponRepository;
-    using WebApplication1.Repository.SpecificRepository.OrderRepository;
-    using WebApplication1.Repository.SpecificRepository.ProductRepository;
-    using WebApplication1.Repository.SpecificRepository.SellerRepository;
-    using WebApplication1.Services.AccountService;
-    using WebApplication1.Services.AddressService;
-    using WebApplication1.Services.AuthService;
-    using WebApplication1.Services.CartService;
-    using WebApplication1.Services.CategoryService;
-    using WebApplication1.Services.CouponService;
-    using WebApplication1.Services.Implementation;
-    using WebApplication1.Services.Interface;
-    using WebApplication1.Services.OrderService;
-    using WebApplication1.Services.ProductService;
+using Hangfire;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Threading.RateLimiting;
+using WebApplication1.Authentication;
+using WebApplication1.BackgroundJobs.OrderJobs;
+using WebApplication1.Data;
+using WebApplication1.Entitys;
+using WebApplication1.Repository.GenericRepository;
+using WebApplication1.Repository.SpecificRepository.AddressRepository;
+using WebApplication1.Repository.SpecificRepository.BuyerRepository;
+using WebApplication1.Repository.SpecificRepository.CartRepository;
+using WebApplication1.Repository.SpecificRepository.CategoryRepository;
+using WebApplication1.Repository.SpecificRepository.CategoryRepository.Interface;
+using WebApplication1.Repository.SpecificRepository.CouponRepository;
+using WebApplication1.Repository.SpecificRepository.OrderRepository;
+using WebApplication1.Repository.SpecificRepository.ProductRepository;
+using WebApplication1.Repository.SpecificRepository.SellerRepository;
+using WebApplication1.Services.AccountService;
+using WebApplication1.Services.AddressService;
+using WebApplication1.Services.AuthService;
+using WebApplication1.Services.CartService;
+using WebApplication1.Services.CategoryService;
+using WebApplication1.Services.CouponService;
+using WebApplication1.Services.Implementation;
+using WebApplication1.Services.Interface;
+using WebApplication1.Services.OrderService;
+using WebApplication1.Services.ProductService;
 
-    var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-    builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-    builder.Services.AddIdentity<User, Role>(options => {
-    options.Password.RequireDigit = true;
+builder.Services.AddHangfire(x => x.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHangfireServer();
+builder.Services.AddIdentity<User, Role>(options => {
+    options.Password.RequireDigit = true; 
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = false;
@@ -43,99 +48,128 @@
     options.Lockout.AllowedForNewUsers = true;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     options.Lockout.MaxFailedAccessAttempts = 10;
-    })
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
+})
+.AddEntityFrameworkStores<AppDbContext>()
+.AddDefaultTokenProviders();
 
-    builder.Services.Configure<JWT>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<JWT>(builder.Configuration.GetSection("Jwt"));
+var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!);
 
-    var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
-    builder.Services.AddAuthentication(options =>
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(o =>
+{
+    o.RequireHttpsMetadata = false;
+    o.SaveToken = true;
+    o.TokenValidationParameters = new TokenValidationParameters
     {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(o =>
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+});
+
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+builder.Services.AddScoped<IAddressRepository, AddressRepository>();
+builder.Services.AddScoped<IBuyerRepository, BuyerRepository>();
+builder.Services.AddScoped<ICartRepository, CartRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ICouponRepository, CouponRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<ISellerRepository, SellerRepository>();
+
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IAddressService, AddressService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ICouponService, CouponService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IOrderBackgroundJobs ,  OrderBackgroundJobs>();
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter(policyName: "AuthPolicy", configureOptions =>
     {
-        o.RequireHttpsMetadata = false;
-        o.SaveToken = true;
-        o.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(key)
-        };
+        configureOptions.PermitLimit = 5;
+        configureOptions.Window = TimeSpan.FromMinutes(1);
+        configureOptions.QueueLimit = 0;
+    });
+    options.AddConcurrencyLimiter(policyName: "CheckoutPolicy", configureOptions =>
+    {
+        configureOptions.PermitLimit = 1;
+        configureOptions.QueueLimit = 0;
+    });
+    options.AddTokenBucketLimiter("BrowsingPolicy", configureOptions =>
+    {
+        configureOptions.TokenLimit = 100; 
+        configureOptions.ReplenishmentPeriod = TimeSpan.FromSeconds(1);
+        configureOptions.TokensPerPeriod = 10; 
+        configureOptions.QueueLimit = 0;
+    });
+    options.AddTokenBucketLimiter("UserActivityPolicy", configureOptions =>
+    {
+        configureOptions.TokenLimit = 50;
+        configureOptions.TokensPerPeriod = 5;
+        configureOptions.ReplenishmentPeriod = TimeSpan.FromSeconds(1);
+        configureOptions.QueueLimit = 0;
+    });
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsync("Too many requests. Please try again later.", cancellationToken);
+    };
+});
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("V2", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "E-Commerce API",
+        Version = "V2"
     });
 
-    //// 4. Dependency Injection (Services & Repositories)
-    builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-
-    //// 2. Specific Repositories
-    builder.Services.AddScoped<IAddressRepository, AddressRepository>();
-    builder.Services.AddScoped<IBuyerRepository, BuyerRepository>();
-    builder.Services.AddScoped<ICartRepository, CartRepository>();
-    builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-    builder.Services.AddScoped<ICouponRepository, CouponRepository>();
-    builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-    builder.Services.AddScoped<IProductRepository, ProductRepository>();
-    builder.Services.AddScoped<ISellerRepository, SellerRepository>();
-
-    //// 3. Services
-    builder.Services.AddScoped<IAccountService, AccountService>();
-    builder.Services.AddScoped<IAddressService, AddressService>();
-    builder.Services.AddScoped<IAuthService, AuthService>();
-    builder.Services.AddScoped<ICartService, CartService>();
-    builder.Services.AddScoped<ICategoryService, CategoryService>();
-    builder.Services.AddScoped<ICouponService, CouponService>();
-    builder.Services.AddScoped<IOrderService, OrderService>();
-    builder.Services.AddScoped<IProductService, ProductService>();
-
-    builder.Services.AddControllers();
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen(options =>
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
-        options.SwaggerDoc("V2", new Microsoft.OpenApi.Models.OpenApiInfo
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Enter 'Bearer' [space] and then your valid token."
+    });
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
         {
-            Title = "E-Commerce API",
-            Version = "V2"
-        });
-
-        options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-        {
-            Name = "Authorization",
-            Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-            Scheme = "Bearer",
-            BearerFormat = "JWT",
-            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-            Description = "Enter 'Bearer' [space] and then your valid token."
-        });
-        options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
             {
-                new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
                 {
-                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                    {
-                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                        Id = "Bearer"
-                    }
-                },
-                new string[] {}
-            }
-        });
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
     });
+});
 
-    var app = builder.Build();
-
-    app.Use(async (context, next) =>
-    {
+var app = builder.Build();
+app.Use(async (context, next) =>
+{
     var watch = System.Diagnostics.Stopwatch.StartNew();
-
     context.Response.OnStarting(() =>
     {
         watch.Stop();
@@ -143,23 +177,25 @@
         return Task.CompletedTask;
     });
 
-        await next();
-    });
-    if (app.Environment.IsDevelopment())
+    await next();
+});
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI(c =>
-        {
-            c.SwaggerEndpoint("/swagger/V2/swagger.json", "My API V2");
+        c.SwaggerEndpoint("/swagger/V2/swagger.json", "My API V2");
+        c.DisplayRequestDuration();
+    });
+}
+app.UseHangfireDashboard("/hangfire");
 
-            c.DisplayRequestDuration();
-        });
-    }
+app.UseHttpsRedirection();
 
-    app.UseHttpsRedirection();
-    app.UseAuthentication();
-    app.UseAuthorization();  
+app.UseRateLimiter();
 
-    app.MapControllers();
+app.UseAuthentication();
+app.UseAuthorization();
 
-    app.Run();
+app.MapControllers();
+app.Run();

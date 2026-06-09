@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using WebApplication1.Constants;
 using WebApplication1.DTOS.Request_DTOs;
@@ -11,6 +12,7 @@ namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController, Authorize]
+    [EnableRateLimiting("UserActivityPolicy")]
     public class CouponController : ControllerBase
     {
         private readonly ICouponService _couponService;

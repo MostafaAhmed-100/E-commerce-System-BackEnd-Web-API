@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.Entitys;
@@ -10,6 +11,7 @@ namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController , Authorize]
+    [EnableRateLimiting("UserActivityPolicy")]
     public class AddressController : ControllerBase 
     {
         private readonly IAddressService _addressService;

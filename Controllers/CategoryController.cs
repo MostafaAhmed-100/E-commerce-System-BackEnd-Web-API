@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using WebApplication1.Constants;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Request_DTOs.Category;
@@ -9,7 +10,8 @@ using WebApplication1.Services.CategoryService;
 namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController ]
+    [ApiController]
+    [EnableRateLimiting("BrowsingPolicy")]
     public class CategoryController : ControllerBase
     {
         private readonly ICategoryService _categoryService;
