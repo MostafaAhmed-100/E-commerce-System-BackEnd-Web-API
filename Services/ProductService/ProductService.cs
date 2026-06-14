@@ -1,4 +1,5 @@
-﻿using WebApplication1.DTOS.Request_DTOs;
+﻿using AutoMapper;
+using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.DTOS.Shared.RequestDto;
 using WebApplication1.DTOS.Shared.Response_DTOs;
@@ -16,12 +17,15 @@ namespace WebApplication1.Services.ProductService
         private readonly IProductRepository _productRepository;
         private readonly ICategoryRepository _categoryRepository;
         private readonly ISellerRepository _sellerRepository;
-
+        private readonly IMapper _mapper;
         public ProductService(
             IProductRepository productRepository,
             ICategoryRepository categoryRepository,
-            ISellerRepository sellerRepository)
+            ISellerRepository sellerRepository,
+            IMapper mapper
+            )
         {
+            _mapper = mapper;
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
             _sellerRepository = sellerRepository;
@@ -55,25 +59,10 @@ namespace WebApplication1.Services.ProductService
                 };
             }
 
-            var product = new Product
-            {
-                CategoryId = createProductRequestDto.CategoryId,
-                SellerId = SellerId,
-                ProductName = createProductRequestDto.ProductName,
-                ProductDescription = createProductRequestDto.ProductDescription,
-                CreatedAt = DateTime.UtcNow,
-                IsDeleted = false,
-                ProductVariants = createProductRequestDto.Variants.Select(v => new ProductVariant
-                {
-                    SKU = v.SKU,
-                    Price = v.Price,
-                    QuantityInStock = v.QuantityInStock,
-                    Color = v.Color ?? "",
-                    Size = v.Size ?? "",
-                    Discount = 0,
-                    ReservedQuantity = 0
-                }).ToList()
-            };
+            var product = _mapper.Map<Product>(createProductRequestDto);
+            product.SellerId = SellerId;
+            product.CreatedAt= DateTime.UtcNow;
+
 
             await _productRepository.AddAsync(product);
             await _productRepository.SaveChangesAsync();
@@ -84,25 +73,7 @@ namespace WebApplication1.Services.ProductService
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "Product created successfully.",
-                Data = new ProductResponseDto
-                {
-                    ProductId = product.ProductId,
-                    ProductName = product.ProductName,
-                    ProductDescription = product.ProductDescription,
-                    CategoryId = product.CategoryId,
-                    CategoryName = category.CategoryName,
-                    SellerId = seller.SellerId,
-                    SellerStoreName = seller.StoreName,
-                    Variants = product.ProductVariants.Select(v => new ProductVariantResponseDto
-                    {
-                        VariantId = v.ProductVariantId,
-                        SKU = v.SKU,
-                        Price = v.Price,
-                        IsAvailable = v.QuantityInStock > 0,
-                        Color = v.Color,
-                        Size = v.Size
-                    }).ToList()
-                }
+                Data = _mapper.Map<ProductResponseDto>(product)
             };
         }
 
@@ -211,25 +182,7 @@ namespace WebApplication1.Services.ProductService
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "Product updated successfully.",
-                Data = new ProductResponseDto
-                {
-                    ProductId = product.ProductId,
-                    ProductName = product.ProductName,
-                    ProductDescription = product.ProductDescription,
-                    CategoryId = product.CategoryId,
-                    CategoryName = category.CategoryName,
-                    SellerId = seller!.SellerId,
-                    SellerStoreName = seller.StoreName,
-                    Variants = product.ProductVariants.Select(v => new ProductVariantResponseDto
-                    {
-                        VariantId = v.ProductVariantId,
-                        SKU = v.SKU,
-                        Price = v.Price,
-                        IsAvailable = v.QuantityInStock > 0,
-                        Color = v.Color,
-                        Size = v.Size
-                    }).ToList()
-                }
+                Data = _mapper.Map<ProductResponseDto>(product)
             };
         }
 
@@ -298,25 +251,7 @@ namespace WebApplication1.Services.ProductService
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "Product retrieved successfully.",
-                Data = new ProductResponseDto
-                {
-                    ProductId = product.ProductId,
-                    ProductName = product.ProductName,
-                    ProductDescription = product.ProductDescription,
-                    CategoryId = product.CategoryId,
-                    CategoryName = category?.CategoryName ?? "Unknown",
-                    SellerId = product.SellerId,
-                    SellerStoreName = seller?.StoreName ?? "Unknown",
-                    Variants = product.ProductVariants?.Select(v => new ProductVariantResponseDto
-                    {
-                        VariantId = v.ProductVariantId,
-                        SKU = v.SKU,
-                        Price = v.Price,
-                        IsAvailable = v.QuantityInStock > 0,
-                        Color = v.Color,
-                        Size = v.Size
-                    }).ToList() ?? new List<ProductVariantResponseDto>()
-                }
+                Data = _mapper.Map<ProductResponseDto>(product)
             };
         }
         public async Task<ApiResponseDto<IEnumerable<ProductResponseDto>>> GetOutOfStockProductsAsync(int SellerId)
@@ -328,31 +263,13 @@ namespace WebApplication1.Services.ProductService
                 .ToList();
 
             var seller = await _sellerRepository.GetByIdAsync(SellerId);
-            var mappedData = new List<ProductResponseDto>();
+            var mappedData = new List<ProductResponseDto>();    
 
             foreach (var product in sellerOutOfStockProducts)
             {
                 var category = await _categoryRepository.GetByIdAsync(product.CategoryId);
 
-                mappedData.Add(new ProductResponseDto
-                {
-                    ProductId = product.ProductId,
-                    ProductName = product.ProductName,
-                    ProductDescription = product.ProductDescription,
-                    CategoryId = product.CategoryId,
-                    CategoryName = category?.CategoryName ?? "Unknown",
-                    SellerId = product.SellerId,
-                    SellerStoreName = seller?.StoreName ?? "Unknown",
-                    Variants = product.ProductVariants?.Select(v => new ProductVariantResponseDto
-                    {
-                        VariantId = v.ProductVariantId,
-                        SKU = v.SKU,
-                        Price = v.Price,
-                        IsAvailable = v.QuantityInStock > 0,
-                        Color = v.Color,
-                        Size = v.Size
-                    }).ToList() ?? new List<ProductVariantResponseDto>()
-                });
+                mappedData.Add(_mapper.Map<ProductResponseDto>(product));
             }
 
             return new ApiResponseDto<IEnumerable<ProductResponseDto>>
@@ -389,29 +306,8 @@ namespace WebApplication1.Services.ProductService
 
             var mappedData = new List<ProductResponseDto>();
             foreach (var p in pagedProducts)
-            {
-                var cat = await _categoryRepository.GetByIdAsync(p.CategoryId);
-                var sel = await _sellerRepository.GetByIdAsync(p.SellerId);
-
-                mappedData.Add(new ProductResponseDto
-                {
-                    ProductId = p.ProductId,
-                    ProductName = p.ProductName,
-                    ProductDescription = p.ProductDescription,
-                    CategoryId = p.CategoryId,
-                    CategoryName = cat?.CategoryName ?? "Unknown",
-                    SellerId = p.SellerId,
-                    SellerStoreName = sel?.StoreName ?? "Unknown",
-                    Variants = p.ProductVariants?.Select(v => new ProductVariantResponseDto
-                    {
-                        VariantId = v.ProductVariantId,
-                        SKU = v.SKU,
-                        Price = v.Price,
-                        IsAvailable = v.QuantityInStock > 0,
-                        Color = v.Color,
-                        Size = v.Size
-                    }).ToList() ?? new List<ProductVariantResponseDto>()
-                });
+            { 
+                mappedData.Add(_mapper.Map<ProductResponseDto>(p));
             }
 
             return new ApiResponseDto<PaginatedResponseDto<ProductResponseDto>>

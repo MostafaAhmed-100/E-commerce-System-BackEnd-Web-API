@@ -1,4 +1,5 @@
-﻿using WebApplication1.DTOS.Request_DTOs;
+﻿using AutoMapper;
+using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Request_DTOs.Category;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.DTOS.Shared.RequestDto;
@@ -13,9 +14,13 @@ namespace WebApplication1.Services.CategoryService
     public class CategoryService : ICategoryService
     {
         private readonly ICategoryRepository _categoryRepository;
+        private readonly IMapper _mapper;
 
-        public CategoryService(ICategoryRepository categoryRepository)
+        public CategoryService(ICategoryRepository categoryRepository
+            , IMapper mapper
+            )
         {
+            _mapper = mapper;
             _categoryRepository = categoryRepository;
         }
 
@@ -51,11 +56,7 @@ namespace WebApplication1.Services.CategoryService
                 }
             }
 
-            var category = new Category
-            {
-                CategoryName = createCategoryRequestDto.CategoryName,
-                ParentCategoryId = createCategoryRequestDto.ParentCategoryId
-            };
+            var category = _mapper.Map<Category>(createCategoryRequestDto);
 
             await _categoryRepository.AddAsync(category);
             await _categoryRepository.SaveChangesAsync();
@@ -65,12 +66,7 @@ namespace WebApplication1.Services.CategoryService
                 IsSuccess = true,
                 StatusCode = 200,
                 ErrorCode = "",
-                Data = new CategoryResponseDto
-                {
-                    CategoryId = category.CategoryId,
-                    CategoryName = category.CategoryName,
-                    ParentCategoryId = category.ParentCategoryId
-                },
+                Data = _mapper.Map<CategoryResponseDto>(category),
                 Message = "Category created successfully."
             };
         }
@@ -131,9 +127,7 @@ namespace WebApplication1.Services.CategoryService
                     };
                 }
             }
-
-            category.CategoryName = updateCategoryRequestDto.CategoryName;
-            category.ParentCategoryId = updateCategoryRequestDto.ParentCategoryId;
+            var Update = _mapper.Map(updateCategoryRequestDto, category);
 
             _categoryRepository.Update(category);
             await _categoryRepository.SaveChangesAsync();
@@ -143,12 +137,7 @@ namespace WebApplication1.Services.CategoryService
                 IsSuccess = true,
                 StatusCode = 200,
                 ErrorCode = "",
-                Data = new CategoryResponseDto
-                {
-                    CategoryId = category.CategoryId,
-                    CategoryName = category.CategoryName,
-                    ParentCategoryId = category.ParentCategoryId
-                },
+                Data = _mapper.Map<CategoryResponseDto>(category),
                 Message = "Category updated successfully."
             };
         }
@@ -218,18 +207,7 @@ namespace WebApplication1.Services.CategoryService
                 IsSuccess = true,
                 StatusCode = 200,
                 ErrorCode = "",
-                Data = new CategoryResponseDto
-                {
-                    CategoryId = category.CategoryId,
-                    CategoryName = category.CategoryName,
-                    ParentCategoryId = category.ParentCategoryId,
-                    SubCategories = category.SubCategories?.Select(s => new CategoryResponseDto
-                    {
-                        CategoryId = s.CategoryId,
-                        CategoryName = s.CategoryName,
-                        ParentCategoryId = s.ParentCategoryId
-                    }).ToList()
-                },
+                Data = _mapper.Map<CategoryResponseDto>(category),
                 Message = "Category retrieved successfully."
             };
         }
@@ -239,12 +217,7 @@ namespace WebApplication1.Services.CategoryService
             var (items, totalCount) = await _categoryRepository.GetAllPagedAsync(paginationRequestDto.PageNumber, paginationRequestDto.PageSize);
 
 
-            var mappedCategories = items.Select(c => new CategoryResponseDto
-            {
-                CategoryId = c.CategoryId,
-                CategoryName = c.CategoryName,
-                ParentCategoryId = c.ParentCategoryId
-            }).ToList();
+            var mappedCategories = _mapper.Map<List<CategoryResponseDto>>(items);
 
             int totalPages = (int)Math.Ceiling(totalCount / (double)paginationRequestDto.PageSize);
 

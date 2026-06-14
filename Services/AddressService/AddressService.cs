@@ -1,4 +1,5 @@
-﻿using WebApplication1.DTOS.Request_DTOs;
+﻿using AutoMapper;
+using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.DTOS.Shared.Response_DTOs;
 using WebApplication1.Entitys;
@@ -9,23 +10,20 @@ namespace WebApplication1.Services.AddressService
     public class AddressService : IAddressService
     {
         private readonly IAddressRepository _addressRepository;
+        private readonly IMapper _mapper;
 
-        public AddressService(IAddressRepository addressRepository)
+        public AddressService(IAddressRepository addressRepository,
+            IMapper mapper
+            )
         {
+            _mapper = mapper;
             _addressRepository = addressRepository;
         }
 
         public async Task<ApiResponseDto<AddressResponseDto>> CreateAddressAsync(CreateAddressRequestDto createAddressRequestDto, int userId)
         {
-            var address = new Address
-            {
-                UserId = userId,
-                City = createAddressRequestDto.City,
-                State = createAddressRequestDto.State,
-                HomeAddress = createAddressRequestDto.HomeAddress,
-                Zip_Code = createAddressRequestDto.ZipCode
-            };
-
+            var address = _mapper.Map<Address>(createAddressRequestDto);
+            address.UserId = userId;
             await _addressRepository.AddAsync(address);
             await _addressRepository.SaveChangesAsync();
 
@@ -35,14 +33,7 @@ namespace WebApplication1.Services.AddressService
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "Address created successfully.",
-                Data = new AddressResponseDto
-                {
-                    AddressId = address.AddressId,
-                    City = address.City,
-                    State = address.State,
-                    HomeAddress = address.HomeAddress,
-                    ZipCode = address.Zip_Code
-                }
+                Data = _mapper.Map<AddressResponseDto>(address)
             };
         }
 
@@ -74,10 +65,8 @@ namespace WebApplication1.Services.AddressService
                 };
             }
 
-            address.City = updateAddressRequestDto.City;
-            address.State = updateAddressRequestDto.State;
-            address.HomeAddress = updateAddressRequestDto.HomeAddress;
-            address.Zip_Code = updateAddressRequestDto.ZipCode;
+            _mapper.Map<Address>(updateAddressRequestDto);
+
 
             _addressRepository.Update(address);
             await _addressRepository.SaveChangesAsync();
@@ -88,14 +77,7 @@ namespace WebApplication1.Services.AddressService
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "Address updated successfully.",
-                Data = new AddressResponseDto
-                {
-                    AddressId = address.AddressId,
-                    City = address.City,
-                    State = address.State,
-                    HomeAddress = address.HomeAddress,
-                    ZipCode = address.Zip_Code
-                }
+                Data = _mapper.Map<AddressResponseDto>(address)
             };
         }
 
@@ -174,14 +156,7 @@ namespace WebApplication1.Services.AddressService
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "Address retrieved successfully.",
-                Data = new AddressResponseDto
-                {
-                    AddressId = address.AddressId,
-                    City = address.City,
-                    State = address.State,
-                    HomeAddress = address.HomeAddress,
-                    ZipCode = address.Zip_Code
-                }
+                Data = _mapper.Map<AddressResponseDto>(address)
             };
         }
 
@@ -195,14 +170,7 @@ namespace WebApplication1.Services.AddressService
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "User addresses retrieved successfully.",
-                Data = addresses.Select(a => new AddressResponseDto
-                {
-                    AddressId = a.AddressId,
-                    City = a.City,
-                    State = a.State,
-                    HomeAddress = a.HomeAddress,
-                    ZipCode = a.Zip_Code
-                }).ToList()
+                Data = _mapper.Map<IEnumerable<AddressResponseDto>>(addresses)
             };
         }
     }

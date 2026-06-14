@@ -1,8 +1,11 @@
-﻿using System;
-using System.Data.Common;
+﻿using AutoMapper;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
+using WebApplication1.DTOS.Shared.Response_DTOs;
 using WebApplication1.Entitys;
 using WebApplication1.Repository.GenericRepository;
 using WebApplication1.Repository.SpecificRepository.CartRepository;
@@ -15,11 +18,13 @@ namespace WebApplication1.Services.Implementation
     {
         private readonly ICartRepository _cartRepository;
         private readonly IGenericRepository<ProductVariant> _variantRepository;
+        private readonly IMapper _mapper;
 
-        public CartService(ICartRepository cartRepository, IGenericRepository<ProductVariant> variantRepository)
+        public CartService(ICartRepository cartRepository, IGenericRepository<ProductVariant> variantRepository, IMapper mapper)
         {
             _cartRepository = cartRepository;
             _variantRepository = variantRepository;
+            _mapper = mapper;
         }
 
         public async Task<ApiResponseDto<CartResponseDto>> GetCartBybuyerId(int buyerId)
@@ -42,28 +47,8 @@ namespace WebApplication1.Services.Implementation
                     Message = "The Cart Has been Created (Empty)"
                 };
             }
-
-            var mappedItems = new List<CartItemResponseDto>();
-            decimal totalPrice = 0;
-
-            foreach (var item in cart.Items)
-            {
-                decimal itemDiscount = item.ProductVariant.Discount;
-                decimal subTotal = (item.ProductVariant.Price - itemDiscount) * item.Quantity;
-
-                mappedItems.Add(new CartItemResponseDto
-                {
-                    VariantId = item.ProductVariantId,
-                    ProductName = item.ProductVariant.Product.ProductName,
-                    Quantity = item.Quantity,
-                    Color = item.ProductVariant.Color,
-                    Size = item.ProductVariant.Size,
-                    Price = item.ProductVariant.Price,
-                    Discount = itemDiscount,
-                    SubTotal = subTotal
-                });
-                totalPrice += subTotal;
-            }
+            var mappedItems = _mapper.Map<List<CartItemResponseDto>>(cart.Items);
+            decimal totalPrice = mappedItems.Sum(item => item.SubTotal);
 
             return new ApiResponseDto<CartResponseDto>
             {
@@ -95,7 +80,7 @@ namespace WebApplication1.Services.Implementation
                     Message = "The product does not exist"
                 };
             }
-            else if (variant.QuantityInStock < addToCartRequestDto.Quantity)
+            if (variant.QuantityInStock < addToCartRequestDto.Quantity)
             {
                 return new ApiResponseDto<CartResponseDto>
                 {
@@ -146,15 +131,13 @@ namespace WebApplication1.Services.Implementation
             }
 
             await _cartRepository.SaveChangesAsync();
-
-            var newcart = await GetCartBybuyerId(buyerId);
-            return newcart;
+            return await GetCartBybuyerId(buyerId);
         }
 
         public async Task<ApiResponseDto<CartResponseDto>> UpdateItemQuantity(int buyerId, int variantId, UpdateCartItemQuantityRequestDto UpdateCartItemQuantityRequestDto)
         {
             var cart = await _cartRepository.GetCartWithItemsAsync(buyerId);
-            if(cart == null)
+            if (cart == null)
             {
                 return new ApiResponseDto<CartResponseDto>
                 {
@@ -165,6 +148,7 @@ namespace WebApplication1.Services.Implementation
                     Message = "This buyer has no Cart"
                 };
             }
+
             var Item = cart.Items.FirstOrDefault(v => v.ProductVariantId == variantId);
             if (Item == null)
             {
@@ -177,6 +161,7 @@ namespace WebApplication1.Services.Implementation
                     Message = "That item Does not exist in The Cart"
                 };
             }
+
             var ItemQuantity = await _variantRepository.GetByIdAsync(variantId);
             if (ItemQuantity == null)
             {
@@ -189,6 +174,7 @@ namespace WebApplication1.Services.Implementation
                     Message = "That item Does not exist in The DataBase"
                 };
             }
+
             var freeQuantity = ItemQuantity.QuantityInStock - ItemQuantity.ReservedQuantity;
             if (freeQuantity < UpdateCartItemQuantityRequestDto.Quantity)
             {
@@ -201,11 +187,10 @@ namespace WebApplication1.Services.Implementation
                     Message = "The Quantity Ubdated Is More Than In Stock"
                 };
             }
+
             Item.Quantity = UpdateCartItemQuantityRequestDto.Quantity;
             await _cartRepository.SaveChangesAsync();
-            var newcart = await GetCartBybuyerId(buyerId);
-            return newcart;
-
+            return await GetCartBybuyerId(buyerId);
         }
 
         public async Task<ApiResponseDto<CartResponseDto>> RemoveFromCart(int buyerId, int variantId)
@@ -222,6 +207,7 @@ namespace WebApplication1.Services.Implementation
                     Message = "This buyer has no Cart"
                 };
             }
+
             var Item = cart.Items.FirstOrDefault(v => v.ProductVariantId == variantId);
             if (Item == null)
             {
@@ -234,12 +220,10 @@ namespace WebApplication1.Services.Implementation
                     Message = "That item Does not exist in The Cart"
                 };
             }
+
             cart.Items.Remove(Item);
             await _cartRepository.SaveChangesAsync();
-
-            var newcart = await GetCartBybuyerId(buyerId);
-            return newcart;
-
+            return await GetCartBybuyerId(buyerId);
         }
 
         public async Task<ApiResponseDto<CartResponseDto>> ClearCart(int buyerId)
@@ -260,13 +244,11 @@ namespace WebApplication1.Services.Implementation
                     },
                     Message = "The Cart Has been Created (Empty)"
                 };
-
             }
+
             cart.Items.Clear();
             await _cartRepository.SaveChangesAsync();
-
-            var newcart = await GetCartBybuyerId(buyerId);
-            return newcart;
+            return await GetCartBybuyerId(buyerId);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Hangfire;
+﻿using AutoMapper;
+using Hangfire;
 using WebApplication1.BackgroundJobs.OrderJobs;
 using WebApplication1.Constants;
 using WebApplication1.DTOS.Request_DTOs;
@@ -22,6 +23,7 @@ namespace WebApplication1.Services.OrderService
         private readonly ICouponRepository _couponRepository;
         private readonly IProductRepository _productRepository;
         private readonly IBuyerRepository _buyerRepository;
+        private readonly IMapper _mapper;
 
         public OrderService(
             IOrderRepository orderRepository,
@@ -29,7 +31,8 @@ namespace WebApplication1.Services.OrderService
             IAddressRepository addressRepository,
             ICouponRepository couponRepository,
             IProductRepository productRepository,
-            IBuyerRepository buyerRepository)
+            IBuyerRepository buyerRepository,
+            IMapper mapper)
         {
             _buyerRepository = buyerRepository;
             _orderRepository = orderRepository;
@@ -37,6 +40,7 @@ namespace WebApplication1.Services.OrderService
             _addressRepository = addressRepository;
             _couponRepository = couponRepository;
             _productRepository = productRepository;
+            _mapper = mapper;
         }
 
 
@@ -184,23 +188,7 @@ namespace WebApplication1.Services.OrderService
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "Order created successfully.",
-                Data = new OrderResponseDto
-                {
-                    OrderId = order.OrderId,
-                    OrderDate = order.CreatedAt,
-                    AppliedCouponCode = appliedCoupon?.CouponCode,
-                    DiscountAmount = order.DiscountAmount ?? 0,
-                    TotalAmount = order.TotalAmount,
-                    Status = order.Status,
-                    ShippingAddress = $"{address.HomeAddress}, {address.City}, {address.State} {address.Zip_Code}",
-                    Items = order.OrderItems.Select(oi => new OrderItemResponseDto
-                    {
-                        ProductNameSnapshot = oi.ProductVariant.Product.ProductName,
-                        Quantity = oi.Quantity,
-                        UnitPrice = oi.Price,
-                        SubTotal = oi.Quantity * oi.Price,
-                    }).ToList()
-                }
+                Data = _mapper.Map<OrderResponseDto>(order)
             };
         }
         public async Task<ApiResponseDto<IEnumerable<OrderResponseDto>>> GetOrdersByBuyerIdAsync(int buyerId, int userId)
@@ -220,23 +208,7 @@ namespace WebApplication1.Services.OrderService
 
             var orders = await _orderRepository.GetOrdersListByBuyerIdAsync(buyerId);
 
-            var mappedOrders = orders.Select(order => new OrderResponseDto
-            {
-                OrderId = order.OrderId,
-                OrderDate = order.CreatedAt,
-                AppliedCouponCode = order.Coupon?.CouponCode,
-                DiscountAmount = order.DiscountAmount ?? 0,
-                TotalAmount = order.TotalAmount,
-                Status = order.Status,
-                ShippingAddress = order.Address != null ? $"{order.Address.HomeAddress}, {order.Address.City}, {order.Address.State} {order.Address.Zip_Code}" : "No Address",
-                Items = order.OrderItems.Select(oi => new OrderItemResponseDto
-                {
-                    ProductNameSnapshot = oi.ProductVariant?.Product?.ProductName ?? "Unknown Product",
-                    Quantity = oi.Quantity,
-                    UnitPrice = oi.Price,
-                    SubTotal = oi.Quantity * oi.Price
-                }).ToList()
-            }).ToList();
+            var mappedOrders = _mapper.Map<IEnumerable<OrderResponseDto>>(orders);
 
             return new ApiResponseDto<IEnumerable<OrderResponseDto>>
             {
@@ -283,23 +255,7 @@ namespace WebApplication1.Services.OrderService
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "Order retrieved successfully.",
-                Data = new OrderResponseDto
-                {
-                    OrderId = order.OrderId,
-                    OrderDate = order.CreatedAt,
-                    AppliedCouponCode = order.Coupon?.CouponCode,
-                    DiscountAmount = order.DiscountAmount ?? 0,
-                    TotalAmount = order.TotalAmount,
-                    Status = order.Status,
-                    ShippingAddress = order.Address != null ? $"{order.Address.HomeAddress}, {order.Address.City}, {order.Address.State} {order.Address.Zip_Code}" : "No Address",
-                    Items = order.OrderItems.Select(oi => new OrderItemResponseDto
-                    {
-                        ProductNameSnapshot = oi.ProductVariant?.Product?.ProductName ?? "Unknown Product",
-                        Quantity = oi.Quantity,
-                        UnitPrice = oi.Price,
-                        SubTotal = oi.Quantity * oi.Price
-                    }).ToList()
-                }
+                Data = _mapper.Map<OrderResponseDto>(order)
             };
         }
 

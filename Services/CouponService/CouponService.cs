@@ -1,4 +1,5 @@
-﻿using WebApplication1.DTOS.Request_DTOs;
+﻿using AutoMapper;
+using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.DTOS.Shared.Response_DTOs;
 using WebApplication1.Entitys;
@@ -9,9 +10,11 @@ namespace WebApplication1.Services.CouponService
     public class CouponService : ICouponService
     {
         private readonly ICouponRepository _couponRepository;
+        private readonly IMapper _mapper;
 
-        public CouponService(ICouponRepository couponRepository)
+        public CouponService(ICouponRepository couponRepository, IMapper mapper)
         {
+            _mapper = mapper;
             _couponRepository = couponRepository;
         }
 
@@ -42,17 +45,12 @@ namespace WebApplication1.Services.CouponService
                 };
             }
 
-            var coupon = new Coupon
-            {
-                CouponCode = createCouponRequestDto.CouponCode,
-                DiscountType = createCouponRequestDto.DiscountType,
-                DiscountValue = createCouponRequestDto.DiscountValue,
-                StartDate = createCouponRequestDto.StartDate,
-                EndDate = createCouponRequestDto.EndDate,
-                UsageLimit = createCouponRequestDto.UsageLimit,
-                UsedCount = 0,
-                SellerId = sellerId
-            };
+            // تحويل الـ DTO إلى Entity
+            var coupon = _mapper.Map<Coupon>(createCouponRequestDto);
+
+            // تنبيه: إسناد حقول السيستم يدويًا لأنها لا تأتي من الـ Request DTO
+            coupon.UsedCount = 0;
+            coupon.SellerId = sellerId;
 
             await _couponRepository.AddAsync(coupon);
             await _couponRepository.SaveChangesAsync();
@@ -63,17 +61,7 @@ namespace WebApplication1.Services.CouponService
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "Coupon created successfully.",
-                Data = new CouponResponseDto
-                {
-                    CouponId = coupon.CouponId,
-                    CouponCode = coupon.CouponCode,
-                    DiscountType = coupon.DiscountType,
-                    DiscountValue = coupon.DiscountValue,
-                    StartDate = coupon.StartDate,
-                    EndDate = coupon.EndDate,
-                    UsageLimit = coupon.UsageLimit,
-                    UsedCount = coupon.UsedCount
-                }
+                Data = _mapper.Map<CouponResponseDto>(coupon)
             };
         }
 
@@ -117,11 +105,8 @@ namespace WebApplication1.Services.CouponService
                 };
             }
 
-            coupon.DiscountType = updateCouponRequestDto.DiscountType;
-            coupon.DiscountValue = updateCouponRequestDto.DiscountValue;
-            coupon.StartDate = updateCouponRequestDto.StartDate;
-            coupon.EndDate = updateCouponRequestDto.EndDate;
-            coupon.UsageLimit = updateCouponRequestDto.UsageLimit;
+            // تنبيه: صب البيانات الجديدة فوق الكائن الأصلي المسترجع (المتتبع بواسطة الـ EF) للحفاظ على الـ ID والـ Code والـ Tracking
+            _mapper.Map(updateCouponRequestDto, coupon);
 
             _couponRepository.Update(coupon);
             await _couponRepository.SaveChangesAsync();
@@ -132,17 +117,7 @@ namespace WebApplication1.Services.CouponService
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "Coupon updated successfully.",
-                Data = new CouponResponseDto
-                {
-                    CouponId = coupon.CouponId,
-                    CouponCode = coupon.CouponCode,
-                    DiscountType = coupon.DiscountType,
-                    DiscountValue = coupon.DiscountValue,
-                    StartDate = coupon.StartDate,
-                    EndDate = coupon.EndDate,
-                    UsageLimit = coupon.UsageLimit,
-                    UsedCount = coupon.UsedCount
-                }
+                Data = _mapper.Map<CouponResponseDto>(coupon)
             };
         }
 
@@ -217,7 +192,6 @@ namespace WebApplication1.Services.CouponService
                 };
             }
 
-
             if (currentTime > coupon.EndDate)
             {
                 return new ApiResponseDto<CouponResponseDto>
@@ -229,6 +203,7 @@ namespace WebApplication1.Services.CouponService
                     Message = "This coupon has expired."
                 };
             }
+
             if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
             {
                 return new ApiResponseDto<CouponResponseDto>
@@ -247,17 +222,7 @@ namespace WebApplication1.Services.CouponService
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "Coupon is valid and retrieved successfully.",
-                Data = new CouponResponseDto
-                {
-                    CouponId = coupon.CouponId,
-                    CouponCode = coupon.CouponCode,
-                    DiscountType = coupon.DiscountType,
-                    DiscountValue = coupon.DiscountValue,
-                    StartDate = coupon.StartDate,
-                    EndDate = coupon.EndDate,
-                    UsageLimit = coupon.UsageLimit,
-                    UsedCount = coupon.UsedCount
-                }
+                Data = _mapper.Map<CouponResponseDto>(coupon)
             };
         }
     }
