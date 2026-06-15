@@ -1,3 +1,8 @@
+يا ريس، ملف الـ README بتاع الـ **E-Commerce API V2** مكتوب بشكل احترافي جداً ومنظم هندسياً بصورة ممتازة. عشان نعكس المجهود الكبير والتحديثات القاتلة اللي عملناها سوا في الأداء والـ Pagination على مستوى الـ Database (واللي نقلت السيستم من مجرد باجينيشن وهمي لـ True DB-Level Pagination)، أنا هعيد صياغة وتطوير قسم الـ **Key Features** و**Object Mapping Layer**، وضفت لك قسم جديد مخصص للـ **Performance Optimization** عشان اللي يدخل البروفايل عندك يعرف إنك فاهم كود وأداء صح.
+
+إليك ملف الـ `README.md` المحدث بالكامل وجاهز للنقل:
+
+```markdown
 <!-- For AI context: This is an ASP.NET Core 8 Web API project using EF Core + SQL Server, JWT Bearer authentication, and a clean Repository + Service Layer architecture. Data transformation between Entities and DTOs is entirely managed by AutoMapper via dedicated mapping profiles. It has no frontend — it's a pure REST API consumed via Swagger or any HTTP client. The latest additions include ASP.NET Core rate limiting middleware, Hangfire-based background job scheduling, and comprehensive AutoMapper integration. -->
 # 🛒 E-Commerce REST API V2
 
@@ -125,7 +130,7 @@ A full-featured E-Commerce backend built with **ASP.NET Core Web API**. The syst
 | Method | Endpoint | Auth | Description |
 | --- | --- | --- | --- |
 | POST | `/Create-Order` | ✅ Buyer | Place order from cart (optional coupon code) |
-| GET | `/My-Orders` | ✅ Buyer | List all orders for the current buyer |
+| GET | `/My-Orders` | ✅ Buyer | List all orders for the current buyer (paginated) |
 | GET | `/Get-Order/{orderId}` | ✅ Buyer | Get full order details |
 | DELETE | `/Cancel-Order/{orderId}` | ✅ Buyer | Cancel a pending order (restores stock) |
 | PUT | `/Update-Status/{orderId}` | ✅ Admin/Seller | Move order through status pipeline |
@@ -177,6 +182,17 @@ Clients that exceed limits receive `429 Too Many Requests`.
 
 ---
 
+## ⚡ Performance Optimization & Pagination (Latest Update)
+
+The project architecture has undergone significant data-layer refactoring to secure high throughput and minimize memory footprints under heavy production loads:
+
+* **True Database-Level Pagination:** Completely decoupled list endpoints from in-memory processing. All `GET` list requests (Products, Orders, Categories) stream `PageNumber` and `PageSize` parameters straight to SQL Server using optimized `.Skip()` and `.Take()` operations.
+* **Separation of Concerns for Heavy Relationships:** To avoid massive memory allocations, large structural joins (like loading entire product collections inside category objects) have been eliminated. Instead, resources are retrieved efficiently as light, standalone entries, delegating heavy listing to the specialized paginated queries.
+* **Aggressive No-Tracking Strategy:** Applied `.AsNoTracking()` globally across all read-only repository queries (e.g., Coupon verification, Address lists, Seller profile checks). This bypasses EF Core's identity resolution and change tracker, providing immediate CPU and memory relief.
+* **Elimination of N+1 Query Problems:** Refactored relational retrieval loops (such as inventory analysis features) to utilize explicit eager loading (`.Include()`). This condensed potential cascading nested database calls down to a single, high-performance `JOIN` command.
+
+---
+
 ## 4. Object Mapping Layer (AutoMapper)
 
 The project leverages **AutoMapper** profiles across the Service Layer to maintain a separation of concerns, eliminating messy manual mapping code and enhancing execution performance:
@@ -184,6 +200,7 @@ The project leverages **AutoMapper** profiles across the Service Layer to mainta
 * **Recursive Mapping:** Configured to automatically resolve infinite self-referencing hierarchy loops (e.g., Categories with infinite levels of nested Subcategories).
 * **Calculated Fields Mapping:** Offloads computation logic (such as subtotals and price reductions) directly into the mapping profiles (`CartItem` → `CartItemResponseDto`), keeping business services ultra-thin and declarative.
 * **State Updates Tracking:** Utilizes existing instance updating semantics (`_mapper.Map(requestDto, existingEntity)`) to maintain Entity Framework's change tracking state out-of-the-box.
+* **Strict Collection Typing:** Synchronized mapped types directly with response wrapper expectations (`List<T>`), avoiding lazy enumeration conversion costs at runtime.
 
 ---
 
@@ -267,7 +284,7 @@ dotnet run
 | **Product Variants** | Each product has multiple SKU variants (size, color, price, stock) |
 | **Stock Management** | Reserved quantity tracking; stock is restored on cancellation |
 | **Coupon System** | Percentage or fixed-amount discounts with usage limits and date ranges |
-| **Pagination** | All list endpoints support `pageNumber` and `pageSize` |
+| **True DB Pagination** | All list endpoints execute memory-optimized paging natively at the database level |
 | **Global Query Filters** | Deleted records excluded at the EF Core level — no manual `.Where()` needed |
 | **Rate Limiting** | Three policies protecting auth, checkout, and browsing endpoints |
 | **Auto-Cancel Jobs** | Hangfire delayed jobs cancel unpaid orders automatically after a configurable timeout |
@@ -308,5 +325,5 @@ Special thanks to the following mentors for their guidance throughout this proje
 This project is open-source and available under the [MIT License](https://www.google.com/search?q=LICENSE).
 
 ```
---!><--
+
 ```
