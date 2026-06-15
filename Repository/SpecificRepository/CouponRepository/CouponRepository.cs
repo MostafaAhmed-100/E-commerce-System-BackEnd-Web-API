@@ -14,6 +14,7 @@ namespace WebApplication1.Repository.SpecificRepository.CouponRepository
         public async Task<Coupon?> GetCouponByCodeAsync(string couponCode)
         {
             return await _AppDbcontext.Set<Coupon>()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.CouponCode == couponCode);
         }
     }

@@ -5,8 +5,7 @@ using System.Security.Claims;
 using WebApplication1.Constants;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Shared.RequestDto;
-using WebApplication1.Services.Interface;
-using WebApplication1.Services.ProductService; 
+using WebApplication1.Services.ProductService;
 
 namespace WebApplication1.Controllers
 {

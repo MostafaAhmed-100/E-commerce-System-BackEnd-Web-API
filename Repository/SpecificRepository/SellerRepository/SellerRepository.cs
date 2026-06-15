@@ -11,7 +11,7 @@ namespace WebApplication1.Repository.SpecificRepository.SellerRepository
         {
         }
 
-        public async Task<Seller> GetSellerIdByUserId(int UserId)
+        public async Task<Seller?> GetSellerIdByUserId(int UserId)
         {
             var Seller = await _AppDbcontext.Sellers.FirstOrDefaultAsync(I => I.UserId == UserId);
             return Seller;

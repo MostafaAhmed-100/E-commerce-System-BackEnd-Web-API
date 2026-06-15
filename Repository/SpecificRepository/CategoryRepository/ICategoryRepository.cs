@@ -5,6 +5,5 @@ namespace WebApplication1.Repository.SpecificRepository.CategoryRepository.Inter
 {
     public interface ICategoryRepository : IGenericRepository<Category>
     {
-        Task<Category?> GetCategoryWithProductsAsync(int id);
     }
 }

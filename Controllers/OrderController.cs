@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using WebApplication1.Constants;
 using WebApplication1.DTOS.Request_DTOs;
+using WebApplication1.DTOS.Shared.RequestDto;
 using WebApplication1.Services.OrderService;
 
 namespace WebApplication1.Controllers
@@ -31,15 +32,14 @@ namespace WebApplication1.Controllers
             var result = await _orderService.CreateOrderAsync(requestDto, buyerId, userId);
             return StatusCode(result.StatusCode, result);
         }
-
         [HttpGet("My-Orders")]
         [Authorize(Roles = AppRoles.Buyer)]
-        public async Task<IActionResult> GetMyOrders()
+        public async Task<IActionResult> GetMyOrders([FromQuery] PaginationRequestDto requestDto)
         {
             var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var buyerId = Convert.ToInt32(User.FindFirstValue("ProfileId"));
 
-            var result = await _orderService.GetOrdersByBuyerIdAsync(buyerId, userId);
+            var result = await _orderService.GetOrdersByBuyerIdAsync(buyerId, userId, requestDto);
             return StatusCode(result.StatusCode, result);
         }
 

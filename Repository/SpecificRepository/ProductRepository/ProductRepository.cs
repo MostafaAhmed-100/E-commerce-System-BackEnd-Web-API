@@ -23,6 +23,7 @@ namespace WebApplication1.Repository.SpecificRepository.ProductRepository
         {
             var ProductsByCategory = await _AppDbcontext.Products
                 .Where(p => p.CategoryId == categoryId)
+                .AsNoTracking()
                 .ToListAsync();
             return ProductsByCategory;
         }
@@ -31,6 +32,7 @@ namespace WebApplication1.Repository.SpecificRepository.ProductRepository
             var searchResults = await  _AppDbcontext.Products
                 .Where(p => p.ProductName.Contains(searchTerm) 
                 || p.ProductDescription.Contains(searchTerm))
+                .AsNoTracking()
                 .ToListAsync();
             return searchResults;
         }
@@ -39,6 +41,7 @@ namespace WebApplication1.Repository.SpecificRepository.ProductRepository
             var outOfStockProducts = await _AppDbcontext.Products
                 .Include(p => p.ProductVariants)
                 .Where(p => p.ProductVariants.All(v => v.QuantityInStock == 0))
+                .AsNoTracking()
                 .ToListAsync();
             return outOfStockProducts;
         }
@@ -48,6 +51,15 @@ namespace WebApplication1.Repository.SpecificRepository.ProductRepository
                 .Include(p => p.ProductVariants)
                 .FirstOrDefaultAsync(p => p.ProductId == ProductId && !p.IsDeleted);
         }
+        public async Task<(IEnumerable<Product> Items, int TotalCount)> GetProductsPagedAsync(int? categoryId, int pageNumber, int pageSize)
+        {
+            var query = _AppDbcontext.Products.AsNoTracking().Where(p => !p.IsDeleted);
+            if (categoryId.HasValue)
+            {
+                query = query.Where(p => p.CategoryId == categoryId.Value);
+            }
 
+            return await ApplyPaginationAsync(query, pageNumber, pageSize);
+        }
     }
 }

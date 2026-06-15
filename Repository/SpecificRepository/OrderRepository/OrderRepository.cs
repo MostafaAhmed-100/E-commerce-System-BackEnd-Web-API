@@ -19,18 +19,22 @@ namespace WebApplication1.Repository.SpecificRepository.OrderRepository
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.ProductVariant)
                 .ThenInclude(pv => pv.Product)
+                .AsSplitQuery()
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
             return order;
         }
-        public async Task<IEnumerable<Order>> GetOrdersListByBuyerIdAsync(int buyerId)
+        public async Task<(IEnumerable<Order> Items, int TotalCount)> GetOrdersListByBuyerIdAsync(int buyerId, int pageNumber, int pageSize)
         {
-            return await _AppDbcontext.Orders
+            var query = _AppDbcontext.Orders
                 .Where(o => o.BuyerId == buyerId && !o.IsDeleted)
                 .Include(o => o.Address)
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.ProductVariant)
                 .ThenInclude(pv => pv.Product)
-                .ToListAsync();
+                .AsSplitQuery()
+                .AsNoTracking();
+            return await ApplyPaginationAsync(query, pageNumber, pageSize);
         }
     }
 }

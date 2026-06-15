@@ -45,10 +45,7 @@ namespace WebApplication1.Services.CouponService
                 };
             }
 
-            // تحويل الـ DTO إلى Entity
             var coupon = _mapper.Map<Coupon>(createCouponRequestDto);
-
-            // تنبيه: إسناد حقول السيستم يدويًا لأنها لا تأتي من الـ Request DTO
             coupon.UsedCount = 0;
             coupon.SellerId = sellerId;
 
@@ -104,8 +101,6 @@ namespace WebApplication1.Services.CouponService
                     Message = "You do not have permission to update this coupon."
                 };
             }
-
-            // تنبيه: صب البيانات الجديدة فوق الكائن الأصلي المسترجع (المتتبع بواسطة الـ EF) للحفاظ على الـ ID والـ Code والـ Tracking
             _mapper.Map(updateCouponRequestDto, coupon);
 
             _couponRepository.Update(coupon);

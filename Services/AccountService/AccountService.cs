@@ -45,7 +45,7 @@ namespace WebApplication1.Services.AccountService
             {
                 var Buyer = await _buyerRepository.GetBuyerByUserId(userId);
                 Buyer.IsDeleted = true;
-                await _buyerRepository.SaveChangesAsync ();
+                await _buyerRepository.SaveChangesAsync();
             }
             if (IsSeller)
             {

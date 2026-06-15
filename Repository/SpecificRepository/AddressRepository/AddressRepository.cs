@@ -15,6 +15,7 @@ namespace WebApplication1.Repository.SpecificRepository.AddressRepository
         {
             var Addresses = await _AppDbcontext.Addresses
                 .Where(p => p.UserId == UserId)
+                .AsNoTracking()
                 .ToListAsync();
             return Addresses;
         }

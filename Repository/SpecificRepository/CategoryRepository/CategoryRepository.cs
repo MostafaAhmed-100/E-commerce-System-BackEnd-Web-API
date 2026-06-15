@@ -13,14 +13,5 @@ namespace WebApplication1.Repository.SpecificRepository.CategoryRepository
         {
             
         }
-
-        public async Task<Category?> GetCategoryWithProductsAsync(int CategoryId)
-        {
-            var GetCategory = await _AppDbcontext.Categories
-                .Where(c => c.CategoryId == CategoryId)
-                .Include(c => c.Products)
-                .FirstOrDefaultAsync();
-            return GetCategory;
-        }
     }
 }

@@ -12,5 +12,6 @@ namespace WebApplication1.Repository.SpecificRepository.ProductRepository
 
         Task<Product?> GetProductWithVariantsAsync(int ProductId);
         Task<IEnumerable<Product>> GetOutOfStockProductsAsync();
+        Task<(IEnumerable<Product> Items, int TotalCount)> GetProductsPagedAsync(int? categoryId, int pageNumber, int pageSize);
     }
 }

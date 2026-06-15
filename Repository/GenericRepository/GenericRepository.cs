@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using WebApplication1.Data;
 using WebApplication1.DTOS.Response_DTOs;
+using WebApplication1.DTOS.Shared.RequestDto;
+using WebApplication1.Entitys;
 
 namespace WebApplication1.Repository.GenericRepository
 {
@@ -28,13 +30,8 @@ namespace WebApplication1.Repository.GenericRepository
 
         public async Task<(IEnumerable<T> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
         {
-            var totalCount = await _AppDbcontext.Set<T>().CountAsync();
-            var items = await _AppDbcontext.Set<T>()
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return (items, totalCount);
+            var query = _AppDbcontext.Set<T>().AsNoTracking();
+            return await ApplyPaginationAsync(query, pageNumber, pageSize);
         }
 
         public async Task<T?> GetByIdAsync(int id)
@@ -66,6 +63,17 @@ namespace WebApplication1.Repository.GenericRepository
                 return true;
             }
             return false;
+        }
+
+        public async Task<(IEnumerable<T> Items, int TotalCount)> ApplyPaginationAsync(IQueryable<T> query, int pageNumber, int pageSize)
+        {
+            var TotalCount = await query.CountAsync();
+            int totalPages = TotalCount / pageSize;
+            var pagedResult = await query
+                .Skip (pageSize * (pageNumber - 1))
+                .Take(pageSize)
+                .ToListAsync();
+            return (pagedResult, TotalCount);
         }
     }
 }

@@ -3,12 +3,10 @@ using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.DTOS.Shared.RequestDto;
 using WebApplication1.DTOS.Shared.Response_DTOs;
-using WebApplication1.Entities;
 using WebApplication1.Entitys;
 using WebApplication1.Repository.SpecificRepository.CategoryRepository.Interface;
 using WebApplication1.Repository.SpecificRepository.ProductRepository;
 using WebApplication1.Repository.SpecificRepository.SellerRepository;
-using WebApplication1.Services.Interface;
 
 namespace WebApplication1.Services.ProductService
 {
@@ -18,12 +16,12 @@ namespace WebApplication1.Services.ProductService
         private readonly ICategoryRepository _categoryRepository;
         private readonly ISellerRepository _sellerRepository;
         private readonly IMapper _mapper;
+
         public ProductService(
             IProductRepository productRepository,
             ICategoryRepository categoryRepository,
             ISellerRepository sellerRepository,
-            IMapper mapper
-            )
+            IMapper mapper)
         {
             _mapper = mapper;
             _productRepository = productRepository;
@@ -31,7 +29,7 @@ namespace WebApplication1.Services.ProductService
             _sellerRepository = sellerRepository;
         }
 
-        public async Task<ApiResponseDto<ProductResponseDto>> CreateProductAsync(CreateProductRequestDto createProductRequestDto, int SellerId)
+        public async Task<ApiResponseDto<ProductResponseDto>> CreateProductAsync(CreateProductRequestDto createProductRequestDto, int sellerId)
         {
             var category = await _categoryRepository.GetByIdAsync(createProductRequestDto.CategoryId);
             if (category == null)
@@ -46,7 +44,7 @@ namespace WebApplication1.Services.ProductService
                 };
             }
 
-            var seller = await _sellerRepository.GetByIdAsync(SellerId);
+            var seller = await _sellerRepository.GetByIdAsync(sellerId);
             if (seller == null)
             {
                 return new ApiResponseDto<ProductResponseDto>
@@ -60,9 +58,8 @@ namespace WebApplication1.Services.ProductService
             }
 
             var product = _mapper.Map<Product>(createProductRequestDto);
-            product.SellerId = SellerId;
-            product.CreatedAt= DateTime.UtcNow;
-
+            product.SellerId = sellerId;
+            product.CreatedAt = DateTime.UtcNow;
 
             await _productRepository.AddAsync(product);
             await _productRepository.SaveChangesAsync();
@@ -77,10 +74,9 @@ namespace WebApplication1.Services.ProductService
             };
         }
 
-        public async Task<ApiResponseDto<ProductResponseDto>> UpdateProductAsync(UpdateProductRequestDto updateProductRequestDto, int SellerId, int ProductId)
+        public async Task<ApiResponseDto<ProductResponseDto>> UpdateProductAsync(UpdateProductRequestDto updateProductRequestDto, int sellerId, int productId)
         {
-
-            var product = await _productRepository.GetProductWithVariantsAsync(ProductId);
+            var product = await _productRepository.GetProductWithVariantsAsync(productId);
 
             if (product == null || product.IsDeleted)
             {
@@ -94,7 +90,7 @@ namespace WebApplication1.Services.ProductService
                 };
             }
 
-            if (product.SellerId != SellerId)
+            if (product.SellerId != sellerId)
             {
                 return new ApiResponseDto<ProductResponseDto>
                 {
@@ -129,7 +125,6 @@ namespace WebApplication1.Services.ProductService
                 .Where(v => v.VariantId.HasValue)
                 .Select(v => v.VariantId.Value)
                 .ToList();
-
 
             var variantsToRemove = product.ProductVariants
                 .Where(v => !incomingVariantIds.Contains(v.ProductVariantId))
@@ -174,8 +169,6 @@ namespace WebApplication1.Services.ProductService
             _productRepository.Update(product);
             await _productRepository.SaveChangesAsync();
 
-            var seller = await _sellerRepository.GetByIdAsync(SellerId);
-
             return new ApiResponseDto<ProductResponseDto>
             {
                 IsSuccess = true,
@@ -186,9 +179,9 @@ namespace WebApplication1.Services.ProductService
             };
         }
 
-        public async Task<ApiResponseDto<string>> DeleteProductAsync(int SellerId, int ProductId)
+        public async Task<ApiResponseDto<string>> DeleteProductAsync(int sellerId, int productId)
         {
-            var product = await _productRepository.GetByIdAsync(ProductId);
+            var product = await _productRepository.GetByIdAsync(productId);
             if (product == null || product.IsDeleted)
             {
                 return new ApiResponseDto<string>
@@ -201,7 +194,7 @@ namespace WebApplication1.Services.ProductService
                 };
             }
 
-            if (product.SellerId != SellerId)
+            if (product.SellerId != sellerId)
             {
                 return new ApiResponseDto<string>
                 {
@@ -227,9 +220,9 @@ namespace WebApplication1.Services.ProductService
             };
         }
 
-        public async Task<ApiResponseDto<ProductResponseDto>> GetProductByIdAsync(int ProductId)
+        public async Task<ApiResponseDto<ProductResponseDto>> GetProductByIdAsync(int productId)
         {
-            var product = await _productRepository.GetByIdAsync(ProductId);
+            var product = await _productRepository.GetByIdAsync(productId);
             if (product == null || product.IsDeleted)
             {
                 return new ApiResponseDto<ProductResponseDto>
@@ -242,9 +235,6 @@ namespace WebApplication1.Services.ProductService
                 };
             }
 
-            var category = await _categoryRepository.GetByIdAsync(product.CategoryId);
-            var seller = await _sellerRepository.GetByIdAsync(product.SellerId);
-
             return new ApiResponseDto<ProductResponseDto>
             {
                 IsSuccess = true,
@@ -254,23 +244,16 @@ namespace WebApplication1.Services.ProductService
                 Data = _mapper.Map<ProductResponseDto>(product)
             };
         }
-        public async Task<ApiResponseDto<IEnumerable<ProductResponseDto>>> GetOutOfStockProductsAsync(int SellerId)
+
+        public async Task<ApiResponseDto<IEnumerable<ProductResponseDto>>> GetOutOfStockProductsAsync(int sellerId)
         {
             var allOutOfStock = await _productRepository.GetOutOfStockProductsAsync();
 
             var sellerOutOfStockProducts = allOutOfStock
-                .Where(p => p.SellerId == SellerId && !p.IsDeleted)
+                .Where(p => p.SellerId == sellerId && !p.IsDeleted)
                 .ToList();
 
-            var seller = await _sellerRepository.GetByIdAsync(SellerId);
-            var mappedData = new List<ProductResponseDto>();    
-
-            foreach (var product in sellerOutOfStockProducts)
-            {
-                var category = await _categoryRepository.GetByIdAsync(product.CategoryId);
-
-                mappedData.Add(_mapper.Map<ProductResponseDto>(product));
-            }
+            var mappedData = _mapper.Map<IEnumerable<ProductResponseDto>>(sellerOutOfStockProducts);
 
             return new ApiResponseDto<IEnumerable<ProductResponseDto>>
             {
@@ -282,33 +265,17 @@ namespace WebApplication1.Services.ProductService
             };
         }
 
-        public async Task<ApiResponseDto<PaginatedResponseDto<ProductResponseDto>>> GetAllProductsAsync(int? CategoryId, PaginationRequestDto paginationRequestDto)
+        public async Task<ApiResponseDto<PaginatedResponseDto<ProductResponseDto>>> GetAllProductsAsync(int? categoryId, PaginationRequestDto paginationRequestDto)
         {
-            IEnumerable<Product> sourceData;
+            var (products, totalCount) = await _productRepository.GetProductsPagedAsync(
+                categoryId,
+                paginationRequestDto.PageNumber,
+                paginationRequestDto.PageSize
+            );
 
-            if (CategoryId.HasValue)
-            {
-                sourceData = await _productRepository.FindAsync(p => p.CategoryId == CategoryId.Value && !p.IsDeleted);
-            }
-            else
-            {
-                var allProducts = await _productRepository.GetAllAsync();
-                sourceData = allProducts.Where(p => !p.IsDeleted);
-            }
-
-            var totalCount = sourceData.Count();
             int totalPages = (int)Math.Ceiling(totalCount / (double)paginationRequestDto.PageSize);
 
-            var pagedProducts = sourceData
-                .Skip((paginationRequestDto.PageNumber - 1) * paginationRequestDto.PageSize)
-                .Take(paginationRequestDto.PageSize)
-                .ToList();
-
-            var mappedData = new List<ProductResponseDto>();
-            foreach (var p in pagedProducts)
-            { 
-                mappedData.Add(_mapper.Map<ProductResponseDto>(p));
-            }
+            var mappedData = _mapper.Map<List<ProductResponseDto>>(products);
 
             return new ApiResponseDto<PaginatedResponseDto<ProductResponseDto>>
             {
@@ -322,7 +289,7 @@ namespace WebApplication1.Services.ProductService
                     PageSize = paginationRequestDto.PageSize,
                     TotalCount = totalCount,
                     TotalPages = totalPages,
-                    Data = mappedData
+                    Data = mappedData!
                 }
             };
         }

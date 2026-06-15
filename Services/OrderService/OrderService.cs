@@ -4,6 +4,7 @@ using WebApplication1.BackgroundJobs.OrderJobs;
 using WebApplication1.Constants;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
+using WebApplication1.DTOS.Shared.RequestDto;
 using WebApplication1.DTOS.Shared.Response_DTOs;
 using WebApplication1.Entitys;
 using WebApplication1.Repository.SpecificRepository.AddressRepository;
@@ -43,7 +44,6 @@ namespace WebApplication1.Services.OrderService
             _mapper = mapper;
         }
 
-
         public async Task<ApiResponseDto<OrderResponseDto>> CreateOrderAsync(CreateOrderRequestDto createOrderRequestDto, int buyerId, int userId)
         {
             var Cart = await _cartRepository.GetCartWithItemsAsync(buyerId);
@@ -80,7 +80,6 @@ namespace WebApplication1.Services.OrderService
                     IsSuccess = false,
                     StatusCode = 404,
                     ErrorCode = "ADDRESS_NOT_FOUND_OR_UNAUTHORIZED",
-       
                     Data = null,
                     Message = "The specified address was not found or does not belong to you."
                 };
@@ -180,8 +179,9 @@ namespace WebApplication1.Services.OrderService
             await _orderRepository.SaveChangesAsync();
 
             BackgroundJob.Schedule<IOrderBackgroundJobs>(
-           job => job.CheckAndCancelUnpaidOrderAsyn(order.OrderId),
-           TimeSpan.FromMinutes(1));
+                job => job.CheckAndCancelUnpaidOrderAsyn(order.OrderId),
+                TimeSpan.FromMinutes(1));
+
             return new ApiResponseDto<OrderResponseDto>
             {
                 IsSuccess = true,
@@ -191,12 +191,12 @@ namespace WebApplication1.Services.OrderService
                 Data = _mapper.Map<OrderResponseDto>(order)
             };
         }
-        public async Task<ApiResponseDto<IEnumerable<OrderResponseDto>>> GetOrdersByBuyerIdAsync(int buyerId, int userId)
+        public async Task<ApiResponseDto<PaginatedResponseDto<OrderResponseDto>>> GetOrdersByBuyerIdAsync(int buyerId, int userId, PaginationRequestDto paginationRequestDto)
         {
             var buyer = await _buyerRepository.GetBuyerByUserId(userId);
             if (buyer == null || buyer.BuyerId != buyerId)
             {
-                return new ApiResponseDto<IEnumerable<OrderResponseDto>>
+                return new ApiResponseDto<PaginatedResponseDto<OrderResponseDto>>
                 {
                     IsSuccess = false,
                     StatusCode = 400,
@@ -206,17 +206,30 @@ namespace WebApplication1.Services.OrderService
                 };
             }
 
-            var orders = await _orderRepository.GetOrdersListByBuyerIdAsync(buyerId);
+            var (orders, totalCount) = await _orderRepository.GetOrdersListByBuyerIdAsync(
+                buyerId,
+                paginationRequestDto.PageNumber,
+                paginationRequestDto.PageSize
+            );
 
-            var mappedOrders = _mapper.Map<IEnumerable<OrderResponseDto>>(orders);
+            int totalPages = (int)Math.Ceiling(totalCount / (double)paginationRequestDto.PageSize);
 
-            return new ApiResponseDto<IEnumerable<OrderResponseDto>>
+            var mappedOrders = _mapper.Map<List<OrderResponseDto>>(orders);
+
+            return new ApiResponseDto<PaginatedResponseDto<OrderResponseDto>>
             {
                 IsSuccess = true,
                 StatusCode = 200,
                 ErrorCode = "",
                 Message = "Orders retrieved successfully.",
-                Data = mappedOrders
+                Data = new PaginatedResponseDto<OrderResponseDto>
+                {
+                    CurrentPage = paginationRequestDto.PageNumber,
+                    PageSize = paginationRequestDto.PageSize,
+                    TotalCount = totalCount,
+                    TotalPages = totalPages,
+                    Data = mappedOrders!
+                }
             };
         }
 
@@ -274,7 +287,8 @@ namespace WebApplication1.Services.OrderService
                     Message = "The specified order does not exist."
                 };
             }
-            if (newStatus != OrderStatus.successful || newStatus != OrderStatus.cancelled || newStatus != OrderStatus.Pending)
+
+            if (newStatus != OrderStatus.successful && newStatus != OrderStatus.cancelled && newStatus != OrderStatus.Pending)
             {
                 return new ApiResponseDto<string>
                 {
@@ -284,8 +298,8 @@ namespace WebApplication1.Services.OrderService
                     Data = null,
                     Message = "The specified status does not exist. "
                 };
-            }    
-                order.Status = newStatus;
+            }
+            order.Status = newStatus;
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
 
@@ -362,7 +376,7 @@ namespace WebApplication1.Services.OrderService
 
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
-           
+
             return new ApiResponseDto<string>
             {
                 IsSuccess = true,
