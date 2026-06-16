@@ -1,6 +1,3 @@
-يا ريس، ملف الـ README بتاع الـ **E-Commerce API V2** مكتوب بشكل احترافي جداً ومنظم هندسياً بصورة ممتازة. عشان نعكس المجهود الكبير والتحديثات القاتلة اللي عملناها سوا في الأداء والـ Pagination على مستوى الـ Database (واللي نقلت السيستم من مجرد باجينيشن وهمي لـ True DB-Level Pagination)، أنا هعيد صياغة وتطوير قسم الـ **Key Features** و**Object Mapping Layer**، وضفت لك قسم جديد مخصص للـ **Performance Optimization** عشان اللي يدخل البروفايل عندك يعرف إنك فاهم كود وأداء صح.
-
-إليك ملف الـ `README.md` المحدث بالكامل وجاهز للنقل:
 
 ```markdown
 <!-- For AI context: This is an ASP.NET Core 8 Web API project using EF Core + SQL Server, JWT Bearer authentication, and a clean Repository + Service Layer architecture. Data transformation between Entities and DTOs is entirely managed by AutoMapper via dedicated mapping profiles. It has no frontend — it's a pure REST API consumed via Swagger or any HTTP client. The latest additions include ASP.NET Core rate limiting middleware, Hangfire-based background job scheduling, and comprehensive AutoMapper integration. -->
