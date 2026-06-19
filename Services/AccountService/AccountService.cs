@@ -1,6 +1,7 @@
 ﻿using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.Entitys;
+using WebApplication1.Exceptions;
 using WebApplication1.Repository.SpecificRepository.BuyerRepository;
 using WebApplication1.Repository.SpecificRepository.SellerRepository;
 
@@ -28,11 +29,9 @@ namespace WebApplication1.Services.AccountService
             var User = await _userManager.FindByIdAsync(userId.ToString());
             if (User == null)
             {
+                throw new NotFoundException("User not found");
                 return new ApiResponseDto<string>
                 {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "INVALID_CREDENTIALS",
                     Data = null,
                     Message = "User not found"
                 };
@@ -55,9 +54,6 @@ namespace WebApplication1.Services.AccountService
             }
             return new ApiResponseDto<string>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Data = null,
                 Message = "User Deleted Succesfuly"
             };

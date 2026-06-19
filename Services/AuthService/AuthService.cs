@@ -2,12 +2,12 @@
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using WebApplication1.Constants;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.Entitys;
+using WebApplication1.Exceptions;
 using WebApplication1.Repository.SpecificRepository.BuyerRepository;
 using WebApplication1.Repository.SpecificRepository.SellerRepository;
 using WebApplication1.Services.Interface;
@@ -66,56 +66,31 @@ namespace WebApplication1.Services.AuthService
         {
             var User = await _userManager.FindByEmailAsync(loginRequestDto.Email);
             if (User == null || !await _userManager.CheckPasswordAsync(User, loginRequestDto.Password))
-            {
-                return new ApiResponseDto<AuthResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 401,
-                    ErrorCode = "INVALID_CREDENTIALS",
-                    Data = null,
-                    Message = "Invalid email or password."
-                };
-            }
+                throw new UnauthorizedException("Invalid email or password.");
+
             var userRoles = await _userManager.GetRolesAsync(User);
             var primaryRole = userRoles.FirstOrDefault() ?? AppRoles.Buyer;
             int profileId = 0;
+
             if (primaryRole == AppRoles.Buyer)
             {
                 var buyer = await _buyerRepository.GetBuyerByUserId(User.Id);
                 if (buyer == null)
-                {
-                    return new ApiResponseDto<AuthResponseDto>
-                    {
-                        IsSuccess = false,
-                        StatusCode = 404,
-                        ErrorCode = "PROFILE_NOT_FOUND",
-                        Data = null,
-                        Message = "Profile not found or corrupted"
-                    };
-                }
+                    throw new NotFoundException("Profile not found or corrupted");
+
                 profileId = buyer.BuyerId;
             }
             else if (primaryRole == AppRoles.Seller)
             {
                 var seller = await _sellerRepository.GetSellerIdByUserId(User.Id);
                 if (seller == null)
-                {
-                    return new ApiResponseDto<AuthResponseDto>
-                    {
-                        IsSuccess = false,
-                        StatusCode = 404,
-                        ErrorCode = "PROFILE_NOT_FOUND",
-                        Data = null,
-                        Message = "Profile not found or corrupted"
-                    };
-                }
+                    throw new NotFoundException("Profile not found or corrupted");
+
                 profileId = seller.SellerId;
             }
+
             return new ApiResponseDto<AuthResponseDto>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Data = new AuthResponseDto
                 {
                     Token = GenerateJwtToken(primaryRole, User, profileId),
@@ -131,34 +106,19 @@ namespace WebApplication1.Services.AuthService
         {
             var Email = await _userManager.FindByEmailAsync(registerRequestDto.Email);
             if (Email != null)
-            {
-                return new ApiResponseDto<AuthResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 409,
-                    ErrorCode = "EMAIL_ALREADY_EXISTS",
-                    Data = null,
-                    Message = "That Email Already Has An Account"
-                };
-            }
+                throw new ConflictException("That Email Already Has An Account");
+
             var user = new User
             {
                 Email = registerRequestDto.Email,
                 UserName = registerRequestDto.UserName,
             };
             var Result = await _userManager.CreateAsync(user, registerRequestDto.Password);
+
             if (!Result.Succeeded)
             {
                 var errors = string.Join(", ", Result.Errors.Select(e => e.Description));
-
-                return new ApiResponseDto<AuthResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 400,
-                    ErrorCode = "USER_CREATION_FAILED",
-                    Data = null,
-                    Message = $"Failed to create user: {errors}"
-                };
+                throw new BadRequestException($"Failed to create user: {errors}");
             }
 
             var Buyer = new Buyer
@@ -183,11 +143,9 @@ namespace WebApplication1.Services.AuthService
                 });
             }
             await _userManager.AddToRoleAsync(user, AppRoles.Buyer);
+
             return new ApiResponseDto<AuthResponseDto>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Data = new AuthResponseDto
                 {
                     Token = GenerateJwtToken(AppRoles.Buyer, user, Buyer.BuyerId),
@@ -202,48 +160,25 @@ namespace WebApplication1.Services.AuthService
         public async Task<ApiResponseDto<AuthResponseDto>> RegisterAdminAsync(RegisterAdminRequestDto registerAdminRequestDto)
         {
             if (registerAdminRequestDto.AdminSecretCode != _configuration["AdminSecretKey"])
-            {
-                return new ApiResponseDto<AuthResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 401,
-                    ErrorCode = "INVALID_SECRET_CODE",
-                    Data = null,
-                    Message = "The AdminSecretKey Is Wrong"
-                };
-            }
+                throw new UnauthorizedException("The AdminSecretKey Is Wrong");
+
             var Email = await _userManager.FindByEmailAsync(registerAdminRequestDto.AdminEmail);
             if (Email != null)
-            {
-                return new ApiResponseDto<AuthResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 409,
-                    ErrorCode = "EMAIL_ALREADY_EXISTS",
-                    Data = null,
-                    Message = "That Email Already Has An Account"
-                };
+                throw new ConflictException("That Email Already Has An Account");
 
-            }
             var user = new User
             {
                 Email = registerAdminRequestDto.AdminEmail,
                 UserName = registerAdminRequestDto.UserName,
             };
             var Result = await _userManager.CreateAsync(user, registerAdminRequestDto.Password);
+
             if (!Result.Succeeded)
             {
                 var errors = string.Join(", ", Result.Errors.Select(e => e.Description));
-
-                return new ApiResponseDto<AuthResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 400,
-                    ErrorCode = "USER_CREATION_FAILED",
-                    Data = null,
-                    Message = $"Failed to create user: {errors}"
-                };
+                throw new BadRequestException($"Failed to create user: {errors}");
             }
+
             if (!await _roleManager.RoleExistsAsync(AppRoles.Admin))
             {
                 await _roleManager.CreateAsync(new Role
@@ -255,11 +190,9 @@ namespace WebApplication1.Services.AuthService
                 });
             }
             await _userManager.AddToRoleAsync(user, AppRoles.Admin);
+
             return new ApiResponseDto<AuthResponseDto>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Data = new AuthResponseDto
                 {
                     Token = GenerateJwtToken(AppRoles.Admin, user, 0),
@@ -269,43 +202,27 @@ namespace WebApplication1.Services.AuthService
                 },
                 Message = "User registered successfully as a Admin."
             };
-
         }
 
         public async Task<ApiResponseDto<AuthResponseDto>> RegisterSellerAsync(RegisterSellerRequestDto registerSellerRequestDto)
         {
             var Email = await _userManager.FindByEmailAsync(registerSellerRequestDto.SellerEmail);
             if (Email != null)
-            {
-                return new ApiResponseDto<AuthResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 409,
-                    ErrorCode = "EMAIL_ALREADY_EXISTS",
-                    Data = null,
-                    Message = "That Email Already Has An Account"
-                };
+                throw new ConflictException("That Email Already Has An Account");
 
-            }
             var user = new User
             {
                 Email = registerSellerRequestDto.SellerEmail,
                 UserName = registerSellerRequestDto.UserName,
             };
             var Result = await _userManager.CreateAsync(user, registerSellerRequestDto.Password);
+
             if (!Result.Succeeded)
             {
                 var errors = string.Join(", ", Result.Errors.Select(e => e.Description));
-
-                return new ApiResponseDto<AuthResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 400,
-                    ErrorCode = "USER_CREATION_FAILED",
-                    Data = null,
-                    Message = $"Failed to create user: {errors}"
-                };
+                throw new BadRequestException($"Failed to create user: {errors}");
             }
+
             if (!await _roleManager.RoleExistsAsync(AppRoles.Seller))
             {
                 await _roleManager.CreateAsync(new Role
@@ -331,11 +248,9 @@ namespace WebApplication1.Services.AuthService
             await _sellerRepository.AddAsync(Seller);
             await _sellerRepository.SaveChangesAsync();
             await _userManager.AddToRoleAsync(user, AppRoles.Seller);
+
             return new ApiResponseDto<AuthResponseDto>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Data = new AuthResponseDto
                 {
                     Token = GenerateJwtToken(AppRoles.Seller, user, Seller.SellerId),

@@ -4,6 +4,7 @@ using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.DTOS.Shared.RequestDto;
 using WebApplication1.DTOS.Shared.Response_DTOs;
 using WebApplication1.Entitys;
+using WebApplication1.Exceptions;
 using WebApplication1.Repository.SpecificRepository.CategoryRepository.Interface;
 using WebApplication1.Repository.SpecificRepository.ProductRepository;
 using WebApplication1.Repository.SpecificRepository.SellerRepository;
@@ -34,27 +35,13 @@ namespace WebApplication1.Services.ProductService
             var category = await _categoryRepository.GetByIdAsync(createProductRequestDto.CategoryId);
             if (category == null)
             {
-                return new ApiResponseDto<ProductResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "CATEGORY_NOT_FOUND",
-                    Data = null,
-                    Message = "The specified category does not exist."
-                };
+                throw new NotFoundException("The specified category does not exist.");
             }
 
             var seller = await _sellerRepository.GetByIdAsync(sellerId);
             if (seller == null)
             {
-                return new ApiResponseDto<ProductResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "SELLER_NOT_FOUND",
-                    Data = null,
-                    Message = "The seller profile was not found."
-                };
+                throw new NotFoundException("The seller profile was not found.");
             }
 
             var product = _mapper.Map<Product>(createProductRequestDto);
@@ -66,9 +53,6 @@ namespace WebApplication1.Services.ProductService
 
             return new ApiResponseDto<ProductResponseDto>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Product created successfully.",
                 Data = _mapper.Map<ProductResponseDto>(product)
             };
@@ -80,39 +64,18 @@ namespace WebApplication1.Services.ProductService
 
             if (product == null || product.IsDeleted)
             {
-                return new ApiResponseDto<ProductResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "PRODUCT_NOT_FOUND",
-                    Data = null,
-                    Message = "The product does not exist."
-                };
+                throw new NotFoundException("The product does not exist.");
             }
 
             if (product.SellerId != sellerId)
             {
-                return new ApiResponseDto<ProductResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 403,
-                    ErrorCode = "UNAUTHORIZED_ACTION",
-                    Data = null,
-                    Message = "You do not have permission to update this product."
-                };
+                throw new UnauthorizedException("You do not have permission to update this product.");
             }
 
             var category = await _categoryRepository.GetByIdAsync(updateProductRequestDto.CategoryId);
             if (category == null)
             {
-                return new ApiResponseDto<ProductResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "CATEGORY_NOT_FOUND",
-                    Data = null,
-                    Message = "The specified category does not exist."
-                };
+                throw new NotFoundException("The specified category does not exist.");
             }
 
             product.ProductName = updateProductRequestDto.ProductName;
@@ -171,9 +134,6 @@ namespace WebApplication1.Services.ProductService
 
             return new ApiResponseDto<ProductResponseDto>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Product updated successfully.",
                 Data = _mapper.Map<ProductResponseDto>(product)
             };
@@ -184,26 +144,12 @@ namespace WebApplication1.Services.ProductService
             var product = await _productRepository.GetByIdAsync(productId);
             if (product == null || product.IsDeleted)
             {
-                return new ApiResponseDto<string>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "PRODUCT_NOT_FOUND",
-                    Data = null,
-                    Message = "The product does not exist."
-                };
+                throw new NotFoundException("The product does not exist.");
             }
 
             if (product.SellerId != sellerId)
             {
-                return new ApiResponseDto<string>
-                {
-                    IsSuccess = false,
-                    StatusCode = 403,
-                    ErrorCode = "UNAUTHORIZED_ACTION",
-                    Data = null,
-                    Message = "You do not have permission to delete this product."
-                };
+                throw new UnauthorizedException("You do not have permission to delete this product.");
             }
 
             product.IsDeleted = true;
@@ -212,9 +158,6 @@ namespace WebApplication1.Services.ProductService
 
             return new ApiResponseDto<string>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Product deleted successfully.",
                 Data = null
             };
@@ -225,21 +168,11 @@ namespace WebApplication1.Services.ProductService
             var product = await _productRepository.GetByIdAsync(productId);
             if (product == null || product.IsDeleted)
             {
-                return new ApiResponseDto<ProductResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "PRODUCT_NOT_FOUND",
-                    Data = null,
-                    Message = "The product does not exist."
-                };
+                throw new NotFoundException("The product does not exist.");
             }
 
             return new ApiResponseDto<ProductResponseDto>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Product retrieved successfully.",
                 Data = _mapper.Map<ProductResponseDto>(product)
             };
@@ -257,9 +190,6 @@ namespace WebApplication1.Services.ProductService
 
             return new ApiResponseDto<IEnumerable<ProductResponseDto>>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Out of stock products retrieved successfully.",
                 Data = mappedData
             };
@@ -279,9 +209,6 @@ namespace WebApplication1.Services.ProductService
 
             return new ApiResponseDto<PaginatedResponseDto<ProductResponseDto>>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Products retrieved successfully.",
                 Data = new PaginatedResponseDto<ProductResponseDto>
                 {

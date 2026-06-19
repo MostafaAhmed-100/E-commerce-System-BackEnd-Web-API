@@ -3,6 +3,7 @@ using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.DTOS.Shared.Response_DTOs;
 using WebApplication1.Entitys;
+using WebApplication1.Exceptions;
 using WebApplication1.Repository.SpecificRepository.AddressRepository;
 
 namespace WebApplication1.Services.AddressService
@@ -29,9 +30,6 @@ namespace WebApplication1.Services.AddressService
 
             return new ApiResponseDto<AddressResponseDto>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Address created successfully.",
                 Data = _mapper.Map<AddressResponseDto>(address)
             };
@@ -43,26 +41,12 @@ namespace WebApplication1.Services.AddressService
 
             if (address == null)
             {
-                return new ApiResponseDto<AddressResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "ADDRESS_NOT_FOUND",
-                    Data = null,
-                    Message = "The address does not exist."
-                };
+                throw new NotFoundException("The address does not exist.");
             }
 
             if (address.UserId != userId)
             {
-                return new ApiResponseDto<AddressResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 403,
-                    ErrorCode = "UNAUTHORIZED_ACTION",
-                    Data = null,
-                    Message = "You do not have permission to update this address."
-                };
+                throw new UnauthorizedException("You do not have permission to update this address.");
             }
 
             _mapper.Map<Address>(updateAddressRequestDto);
@@ -73,9 +57,6 @@ namespace WebApplication1.Services.AddressService
 
             return new ApiResponseDto<AddressResponseDto>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Address updated successfully.",
                 Data = _mapper.Map<AddressResponseDto>(address)
             };
@@ -87,26 +68,12 @@ namespace WebApplication1.Services.AddressService
 
             if (address == null)
             {
-                return new ApiResponseDto<string>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "ADDRESS_NOT_FOUND",
-                    Data = null,
-                    Message = "The address does not exist."
-                };
+                throw new NotFoundException("The address does not exist.");
             }
 
             if (address.UserId != userId)
             {
-                return new ApiResponseDto<string>
-                {
-                    IsSuccess = false,
-                    StatusCode = 403,
-                    ErrorCode = "UNAUTHORIZED_ACTION",
-                    Data = null,
-                    Message = "You do not have permission to delete this address."
-                };
+                throw new UnauthorizedException("You do not have permission to delete this address.");
             }
 
             _addressRepository.Delete(address);
@@ -114,9 +81,6 @@ namespace WebApplication1.Services.AddressService
 
             return new ApiResponseDto<string>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Address deleted successfully.",
                 Data = null
             };
@@ -128,33 +92,16 @@ namespace WebApplication1.Services.AddressService
 
             if (address == null)
             {
-                return new ApiResponseDto<AddressResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "ADDRESS_NOT_FOUND",
-                    Data = null,
-                    Message = "The address does not exist."
-                };
+                throw new NotFoundException("The address does not exist.");
             }
 
             if (address.UserId != userId)
             {
-                return new ApiResponseDto<AddressResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 403,
-                    ErrorCode = "UNAUTHORIZED_ACTION",
-                    Data = null,
-                    Message = "You do not have permission to view this address."
-                };
+                throw new UnauthorizedException("You do not have permission to view this address.");
             }
 
             return new ApiResponseDto<AddressResponseDto>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Address retrieved successfully.",
                 Data = _mapper.Map<AddressResponseDto>(address)
             };
@@ -166,9 +113,6 @@ namespace WebApplication1.Services.AddressService
 
             return new ApiResponseDto<IEnumerable<AddressResponseDto>>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "User addresses retrieved successfully.",
                 Data = _mapper.Map<IEnumerable<AddressResponseDto>>(addresses)
             };

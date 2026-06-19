@@ -10,6 +10,7 @@ using WebApplication1.Authentication;
 using WebApplication1.BackgroundJobs.OrderJobs;
 using WebApplication1.Data;
 using WebApplication1.Entitys;
+using WebApplication1.Middlewares;
 using WebApplication1.Repository.GenericRepository;
 using WebApplication1.Repository.SpecificRepository.AddressRepository;
 using WebApplication1.Repository.SpecificRepository.BuyerRepository;
@@ -168,6 +169,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+app.UseMiddleware<ExceptionMiddleware>();
 app.Use(async (context, next) =>
 {
     var watch = System.Diagnostics.Stopwatch.StartNew();

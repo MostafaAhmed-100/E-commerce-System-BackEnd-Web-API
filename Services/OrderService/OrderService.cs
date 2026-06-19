@@ -7,6 +7,7 @@ using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.DTOS.Shared.RequestDto;
 using WebApplication1.DTOS.Shared.Response_DTOs;
 using WebApplication1.Entitys;
+using WebApplication1.Exceptions;
 using WebApplication1.Repository.SpecificRepository.AddressRepository;
 using WebApplication1.Repository.SpecificRepository.BuyerRepository;
 using WebApplication1.Repository.SpecificRepository.CartRepository;
@@ -49,40 +50,19 @@ namespace WebApplication1.Services.OrderService
             var Cart = await _cartRepository.GetCartWithItemsAsync(buyerId);
             if (Cart == null || !Cart.Items.Any())
             {
-                return new ApiResponseDto<OrderResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 400,
-                    ErrorCode = "EMPTY_CART_ITEMS",
-                    Data = null,
-                    Message = "Your cart has no items to order."
-                };
+                throw new BadRequestException("Your cart has no items to order.");
             }
 
             var buyer = await _buyerRepository.GetBuyerByUserId(userId);
             if (buyerId != buyer.BuyerId)
             {
-                return new ApiResponseDto<OrderResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 400,
-                    ErrorCode = "IN_VALID_BUYER",
-                    Data = null,
-                    Message = "The provided Buyer ID does not belong to the authenticated user"
-                };
+                throw new UnauthorizedException("The provided Buyer ID does not belong to the authenticated user");
             }
 
             var address = await _addressRepository.GetByIdAsync(createOrderRequestDto.AddressId);
             if (address == null || address.UserId != userId)
             {
-                return new ApiResponseDto<OrderResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "ADDRESS_NOT_FOUND_OR_UNAUTHORIZED",
-                    Data = null,
-                    Message = "The specified address was not found or does not belong to you."
-                };
+                throw new NotFoundException("The specified address was not found or does not belong to you.");
             }
 
             decimal subtotal = 0;
@@ -91,14 +71,7 @@ namespace WebApplication1.Services.OrderService
                 var freeQuantity = item.ProductVariant.QuantityInStock - item.ProductVariant.ReservedQuantity;
                 if (freeQuantity < item.Quantity)
                 {
-                    return new ApiResponseDto<OrderResponseDto>
-                    {
-                        IsSuccess = false,
-                        StatusCode = 400,
-                        ErrorCode = "INSUFFICIENT_STOCK",
-                        Data = null,
-                        Message = $"Not enough stock for variant. Requested: {item.Quantity}, Available: {freeQuantity}."
-                    };
+                    throw new BadRequestException($"Not enough stock for variant. Requested: {item.Quantity}, Available: {freeQuantity}.");
                 }
                 subtotal += item.Quantity * item.ProductVariant.Price;
             }
@@ -115,14 +88,7 @@ namespace WebApplication1.Services.OrderService
                     appliedCoupon.EndDate < DateTime.UtcNow ||
                     (appliedCoupon.UsageLimit.HasValue && appliedCoupon.UsedCount >= appliedCoupon.UsageLimit))
                 {
-                    return new ApiResponseDto<OrderResponseDto>
-                    {
-                        IsSuccess = false,
-                        StatusCode = 400,
-                        ErrorCode = "INVALID_COUPON",
-                        Data = null,
-                        Message = "The provided coupon is invalid, expired, or has reached its usage limit."
-                    };
+                    throw new BadRequestException("The provided coupon is invalid, expired, or has reached its usage limit.");
                 }
 
                 if (appliedCoupon.DiscountType == DiscountType.Percentage)
@@ -184,9 +150,6 @@ namespace WebApplication1.Services.OrderService
 
             return new ApiResponseDto<OrderResponseDto>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Order created successfully.",
                 Data = _mapper.Map<OrderResponseDto>(order)
             };
@@ -196,14 +159,7 @@ namespace WebApplication1.Services.OrderService
             var buyer = await _buyerRepository.GetBuyerByUserId(userId);
             if (buyer == null || buyer.BuyerId != buyerId)
             {
-                return new ApiResponseDto<PaginatedResponseDto<OrderResponseDto>>
-                {
-                    IsSuccess = false,
-                    StatusCode = 400,
-                    ErrorCode = "IN_VALID_BUYER",
-                    Data = null,
-                    Message = "The provided Buyer ID does not belong to the authenticated user."
-                };
+                throw new UnauthorizedException("The provided Buyer ID does not belong to the authenticated user.");
             }
 
             var (orders, totalCount) = await _orderRepository.GetOrdersListByBuyerIdAsync(
@@ -218,9 +174,6 @@ namespace WebApplication1.Services.OrderService
 
             return new ApiResponseDto<PaginatedResponseDto<OrderResponseDto>>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Orders retrieved successfully.",
                 Data = new PaginatedResponseDto<OrderResponseDto>
                 {
@@ -238,35 +191,18 @@ namespace WebApplication1.Services.OrderService
             var buyer = await _buyerRepository.GetBuyerByUserId(userId);
             if (buyer == null)
             {
-                return new ApiResponseDto<OrderResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 400,
-                    ErrorCode = "IN_VALID_BUYER",
-                    Data = null,
-                    Message = "User profile not found."
-                };
+                throw new BadRequestException("User profile not found.");
             }
 
             var order = await _orderRepository.GetOrderWithDetailsAsync(orderId, buyer.BuyerId);
 
             if (order == null || order.IsDeleted)
             {
-                return new ApiResponseDto<OrderResponseDto>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "ORDER_NOT_FOUND",
-                    Data = null,
-                    Message = "Order not found or you do not have permission to view it."
-                };
+                throw new NotFoundException("Order not found or you do not have permission to view it.");
             }
 
             return new ApiResponseDto<OrderResponseDto>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Order retrieved successfully.",
                 Data = _mapper.Map<OrderResponseDto>(order)
             };
@@ -278,26 +214,12 @@ namespace WebApplication1.Services.OrderService
 
             if (order == null || order.IsDeleted)
             {
-                return new ApiResponseDto<string>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "ORDER_NOT_FOUND",
-                    Data = null,
-                    Message = "The specified order does not exist."
-                };
+                throw new NotFoundException("The specified order does not exist.");
             }
 
             if (newStatus != OrderStatus.successful && newStatus != OrderStatus.cancelled && newStatus != OrderStatus.Pending)
             {
-                return new ApiResponseDto<string>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "STATUS_NOT_FOUND",
-                    Data = null,
-                    Message = "The specified status does not exist. "
-                };
+                throw new NotFoundException("The specified status does not exist. ");
             }
             order.Status = newStatus;
             _orderRepository.Update(order);
@@ -305,9 +227,6 @@ namespace WebApplication1.Services.OrderService
 
             return new ApiResponseDto<string>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = $"Order status updated to {newStatus} successfully.",
                 Data = null
             };
@@ -318,40 +237,19 @@ namespace WebApplication1.Services.OrderService
             var buyer = await _buyerRepository.GetBuyerByUserId(userId);
             if (buyer == null)
             {
-                return new ApiResponseDto<string>
-                {
-                    IsSuccess = false,
-                    StatusCode = 400,
-                    ErrorCode = "IN_VALID_BUYER",
-                    Data = null,
-                    Message = "User profile not found."
-                };
+                throw new NotFoundException("User profile not found.");
             }
 
             var order = await _orderRepository.GetOrderWithDetailsAsync(orderId, buyer.BuyerId);
 
             if (order == null || order.IsDeleted)
             {
-                return new ApiResponseDto<string>
-                {
-                    IsSuccess = false,
-                    StatusCode = 404,
-                    ErrorCode = "ORDER_NOT_FOUND",
-                    Data = null,
-                    Message = "Order not found."
-                };
+                throw new NotFoundException("Order not found.");
             }
 
             if (order.Status == OrderStatus.cancelled)
             {
-                return new ApiResponseDto<string>
-                {
-                    IsSuccess = false,
-                    StatusCode = 400,
-                    ErrorCode = "CANNOT_CANCEL_ORDER",
-                    Data = null,
-                    Message = $"Order cannot be cancelled because it is already {order.Status}."
-                };
+                throw new BadRequestException($"Order cannot be cancelled because it is already {order.Status}.");
             }
 
             order.Status = OrderStatus.cancelled;
@@ -379,9 +277,6 @@ namespace WebApplication1.Services.OrderService
 
             return new ApiResponseDto<string>
             {
-                IsSuccess = true,
-                StatusCode = 200,
-                ErrorCode = "",
                 Message = "Order cancelled successfully and stock has been restored.",
                 Data = null
             };
