@@ -1,9 +1,8 @@
-
 ```markdown
-<!-- For AI context: This is an ASP.NET Core 8 Web API project using EF Core + SQL Server, JWT Bearer authentication, and a clean Repository + Service Layer architecture. Data transformation between Entities and DTOs is entirely managed by AutoMapper via dedicated mapping profiles. It has no frontend — it's a pure REST API consumed via Swagger or any HTTP client. The latest additions include ASP.NET Core rate limiting middleware, Hangfire-based background job scheduling, and comprehensive AutoMapper integration. -->
+<!-- For AI context: This is an ASP.NET Core 8 Web API project using EF Core + SQL Server, JWT Bearer authentication, and a clean Repository + Service Layer architecture. Data transformation between Entities and DTOs is entirely managed by AutoMapper via dedicated mapping profiles. It has no frontend — it's a pure REST API consumed via Swagger or any HTTP client. The latest additions include ASP.NET Core rate limiting middleware, Hangfire-based background job scheduling, custom Exception Middleware, and comprehensive AutoMapper integration. -->
 # 🛒 E-Commerce REST API V2
 
-A full-featured E-Commerce backend built with **ASP.NET Core Web API**. The system supports three roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, coupon discounts, rate limiting, and automated background jobs.
+A full-featured E-Commerce backend built with **ASP.NET Core Web API**. The system supports three roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, coupon discounts, rate limiting, background jobs, and centralized exception handling.
 
 ---
 
@@ -19,13 +18,14 @@ A full-featured E-Commerce backend built with **ASP.NET Core Web API**. The syst
 | Object Mapping | AutoMapper |
 | Rate Limiting | ASP.NET Core Built-in Rate Limiting |
 | Background Jobs | Hangfire + Hangfire.SqlServer |
+| Error Handling | Custom Exception Middleware |
 
 ---
 
 ## 🏗️ Project Structure
 ```text
 ├── Controllers/               # API endpoints (thin layer, delegates to services)
-├── Services/                  # Business logic layer
+├── Services/                  # Business logic layer (Clean & free of HTTP concerns)
 ├── Repository/
 │   ├── GenericRepository/     # Base CRUD operations
 │   └── SpecificRepository/    # Domain-specific queries
@@ -34,6 +34,8 @@ A full-featured E-Commerce backend built with **ASP.NET Core Web API**. The syst
 │   ├── Request_DTOs/          # Input models (validated)
 │   └── Response_DTOs/         # Output models (consistent wrapper)
 ├── Mappings/                  # AutoMapper Profiles (Clean DTO transformation)
+├── Middlewares/               # Custom request pipeline filters (e.g., ExceptionMiddleware)
+├── Exceptions/                # Domain-specific custom exceptions
 ├── Constants/                 # OrderStatus constants and other shared literals
 ├── BackgroundJobs/            # Hangfire job definitions
 └── Data/                      # AppDbContext + migrations
@@ -179,25 +181,35 @@ Clients that exceed limits receive `429 Too Many Requests`.
 
 ---
 
-## ⚡ Performance Optimization & Pagination (Latest Update)
+## ⚡ Performance Optimization & Pagination
 
 The project architecture has undergone significant data-layer refactoring to secure high throughput and minimize memory footprints under heavy production loads:
 
-* **True Database-Level Pagination:** Completely decoupled list endpoints from in-memory processing. All `GET` list requests (Products, Orders, Categories) stream `PageNumber` and `PageSize` parameters straight to SQL Server using optimized `.Skip()` and `.Take()` operations.
-* **Separation of Concerns for Heavy Relationships:** To avoid massive memory allocations, large structural joins (like loading entire product collections inside category objects) have been eliminated. Instead, resources are retrieved efficiently as light, standalone entries, delegating heavy listing to the specialized paginated queries.
-* **Aggressive No-Tracking Strategy:** Applied `.AsNoTracking()` globally across all read-only repository queries (e.g., Coupon verification, Address lists, Seller profile checks). This bypasses EF Core's identity resolution and change tracker, providing immediate CPU and memory relief.
-* **Elimination of N+1 Query Problems:** Refactored relational retrieval loops (such as inventory analysis features) to utilize explicit eager loading (`.Include()`). This condensed potential cascading nested database calls down to a single, high-performance `JOIN` command.
+* **True Database-Level Pagination:** Completely decoupled list endpoints from in-memory processing. All `GET` list requests stream `PageNumber` and `PageSize` parameters straight to SQL Server using optimized `.Skip()` and `.Take()` operations.
+* **Separation of Concerns for Heavy Relationships:** To avoid massive memory allocations, large structural joins have been eliminated. Resources are retrieved efficiently as light, standalone entries.
+* **Aggressive No-Tracking Strategy:** Applied `.AsNoTracking()` globally across all read-only repository queries, bypassing EF Core's change tracker and providing immediate CPU and memory relief.
+* **Elimination of N+1 Query Problems:** Refactored relational retrieval loops to utilize explicit eager loading (`.Include()`), condensing nested calls down to a single, high-performance `JOIN`.
 
 ---
 
-## 4. Object Mapping Layer (AutoMapper)
+## 🛡️ Global Error Handling & Middleware
 
-The project leverages **AutoMapper** profiles across the Service Layer to maintain a separation of concerns, eliminating messy manual mapping code and enhancing execution performance:
+The project implements a robust, centralized error-handling architecture to keep controllers and services clean and ensure the frontend always receives predictable responses:
 
-* **Recursive Mapping:** Configured to automatically resolve infinite self-referencing hierarchy loops (e.g., Categories with infinite levels of nested Subcategories).
-* **Calculated Fields Mapping:** Offloads computation logic (such as subtotals and price reductions) directly into the mapping profiles (`CartItem` → `CartItemResponseDto`), keeping business services ultra-thin and declarative.
-* **State Updates Tracking:** Utilizes existing instance updating semantics (`_mapper.Map(requestDto, existingEntity)`) to maintain Entity Framework's change tracking state out-of-the-box.
-* **Strict Collection Typing:** Synchronized mapped types directly with response wrapper expectations (`List<T>`), avoiding lazy enumeration conversion costs at runtime.
+* **Centralized Exception Middleware:** A custom `ExceptionMiddleware` sits at the top of the request pipeline, catching any unhandled exceptions, preventing app crashes, and logging the errors automatically.
+* **Domain-Specific Exceptions:** Repetitive error returns in the Service Layer have been replaced with clean, domain-specific exceptions (`NotFoundException`, `BadRequestException`, `UnauthorizedException`, `ConflictException`).
+* **Dry & Clean Services:** Business logic focuses entirely on the "Happy Path". Error conditions immediately throw exceptions, leaving the middleware to handle HTTP status codes and JSON formatting.
+
+---
+
+## 🔄 Object Mapping Layer (AutoMapper)
+
+The project leverages **AutoMapper** profiles across the Service Layer to maintain a separation of concerns, eliminating messy manual mapping code:
+
+* **Recursive Mapping:** Configured to automatically resolve infinite self-referencing hierarchy loops.
+* **Calculated Fields Mapping:** Offloads computation logic (such as subtotals and price reductions) directly into the mapping profiles.
+* **State Updates Tracking:** Utilizes existing instance updating semantics to maintain EF Core's change tracking state.
+* **Strict Collection Typing:** Synchronized mapped types directly with response wrapper expectations.
 
 ---
 
@@ -277,21 +289,24 @@ dotnet run
 
 | Feature | Details |
 | --- | --- |
-| **Soft Delete** | Users, products, and orders are never hard-deleted; global query filters hide them automatically |
-| **Product Variants** | Each product has multiple SKU variants (size, color, price, stock) |
-| **Stock Management** | Reserved quantity tracking; stock is restored on cancellation |
-| **Coupon System** | Percentage or fixed-amount discounts with usage limits and date ranges |
-| **True DB Pagination** | All list endpoints execute memory-optimized paging natively at the database level |
-| **Global Query Filters** | Deleted records excluded at the EF Core level — no manual `.Where()` needed |
-| **Rate Limiting** | Three policies protecting auth, checkout, and browsing endpoints |
-| **Auto-Cancel Jobs** | Hangfire delayed jobs cancel unpaid orders automatically after a configurable timeout |
-| **Response Time Header** | Every response includes `X-Response-Time` for performance monitoring |
+| **Centralized Error Handling** | Custom middleware intercepts exceptions and standardizes API responses. |
+| **Soft Delete** | Users, products, and orders are never hard-deleted; global query filters hide them automatically. |
+| **Product Variants** | Each product has multiple SKU variants (size, color, price, stock). |
+| **Stock Management** | Reserved quantity tracking; stock is restored on cancellation. |
+| **Coupon System** | Percentage or fixed-amount discounts with usage limits and date ranges. |
+| **True DB Pagination** | All list endpoints execute memory-optimized paging natively at the database level. |
+| **Global Query Filters** | Deleted records excluded at the EF Core level — no manual `.Where()` needed. |
+| **Rate Limiting** | Three policies protecting auth, checkout, and browsing endpoints. |
+| **Auto-Cancel Jobs** | Hangfire delayed jobs cancel unpaid orders automatically after a configurable timeout. |
+| **Response Time Header** | Every response includes `X-Response-Time` for performance monitoring. |
 
 ---
 
 ## 📁 Unified Response Format
 
-Every endpoint returns the same wrapper shape:
+Every endpoint (whether successful or failed) returns the exact same wrapper shape, making frontend consumption seamless.
+
+**Example 1: Success Response (200 OK)**
 
 ```json
 {
@@ -299,7 +314,23 @@ Every endpoint returns the same wrapper shape:
   "statusCode": 200,
   "errorCode": "",
   "message": "Operation successful.",
-  "data": {}
+  "data": {
+    "id": 1,
+    "name": "Product Name"
+  }
+}
+
+```
+
+**Example 2: Error Response (404 Not Found handled by Middleware)**
+
+```json
+{
+  "isSuccess": false,
+  "statusCode": 404,
+  "errorCode": "",
+  "message": "The product does not exist.",
+  "data": null
 }
 
 ```
@@ -319,7 +350,7 @@ Special thanks to the following mentors for their guidance throughout this proje
 
 ## 📜 License
 
-This project is open-source and available under the [MIT License](https://www.google.com/search?q=LICENSE).
+This project is open-source and available under the MIT License.
 
 ```
 
