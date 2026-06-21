@@ -1,8 +1,7 @@
 ```markdown
-<!-- For AI context: This is an ASP.NET Core 8 Web API project using EF Core + SQL Server, JWT Bearer authentication, and a clean Repository + Service Layer architecture. Data transformation between Entities and DTOs is entirely managed by AutoMapper via dedicated mapping profiles. It has no frontend — it's a pure REST API consumed via Swagger or any HTTP client. The latest additions include ASP.NET Core rate limiting middleware, Hangfire-based background job scheduling, custom Exception Middleware, and comprehensive AutoMapper integration. -->
 # 🛒 E-Commerce REST API V2
 
-A full-featured E-Commerce backend built with **ASP.NET Core Web API**. The system supports three roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, coupon discounts, rate limiting, background jobs, and centralized exception handling.
+A full-featured E-Commerce backend built with **ASP.NET Core Web API**. The system supports three roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, coupon discounts, rate limiting, background jobs, clean data validation, and centralized exception handling.
 
 ---
 
@@ -16,9 +15,10 @@ A full-featured E-Commerce backend built with **ASP.NET Core Web API**. The syst
 | Auth | ASP.NET Core Identity + JWT Bearer |
 | Architecture | Repository Pattern + Service Layer |
 | Object Mapping | AutoMapper |
+| Input Validation | Fluent Validation |
 | Rate Limiting | ASP.NET Core Built-in Rate Limiting |
 | Background Jobs | Hangfire + Hangfire.SqlServer |
-| Error Handling | Custom Exception Middleware |
+| Error Handling | Custom Exception Middleware + Action Filters |
 
 ---
 
@@ -31,10 +31,12 @@ A full-featured E-Commerce backend built with **ASP.NET Core Web API**. The syst
 │   └── SpecificRepository/    # Domain-specific queries
 ├── Entities/                  # EF Core models
 ├── DTOs/
-│   ├── Request_DTOs/          # Input models (validated)
+│   ├── Request_DTOs/          # Input models (pure data carriers)
 │   └── Response_DTOs/         # Output models (consistent wrapper)
+├── Validators/                # Fluent Validation rules isolated from DTOs
 ├── Mappings/                  # AutoMapper Profiles (Clean DTO transformation)
-├── Middlewares/               # Custom request pipeline filters (e.g., ExceptionMiddleware)
+├── Filters/                   # Action Filters (e.g., Validation interceptors)
+├── Middlewares/               # Custom request pipeline (e.g., ExceptionMiddleware)
 ├── Exceptions/                # Domain-specific custom exceptions
 ├── Constants/                 # OrderStatus constants and other shared literals
 ├── BackgroundJobs/            # Hangfire job definitions
@@ -192,13 +194,13 @@ The project architecture has undergone significant data-layer refactoring to sec
 
 ---
 
-## 🛡️ Global Error Handling & Middleware
+## 🛡️ Clean Validation & Global Error Handling
 
-The project implements a robust, centralized error-handling architecture to keep controllers and services clean and ensure the frontend always receives predictable responses:
+The project implements a robust, centralized error-handling and validation architecture to keep controllers and services completely clean of boilerplate code:
 
-* **Centralized Exception Middleware:** A custom `ExceptionMiddleware` sits at the top of the request pipeline, catching any unhandled exceptions, preventing app crashes, and logging the errors automatically.
-* **Domain-Specific Exceptions:** Repetitive error returns in the Service Layer have been replaced with clean, domain-specific exceptions (`NotFoundException`, `BadRequestException`, `UnauthorizedException`, `ConflictException`).
-* **Dry & Clean Services:** Business logic focuses entirely on the "Happy Path". Error conditions immediately throw exceptions, leaving the middleware to handle HTTP status codes and JSON formatting.
+* **Fluent Validation & Action Filters:** DTOs are kept pure. Validation logic is isolated in dedicated `FluentValidation` classes. A global `ValidationFilter` intercepts incoming requests, validates the DTOs automatically, and throws domain exceptions if validation fails, never allowing bad data to reach the Controller.
+* **Centralized Exception Middleware:** A custom `ExceptionMiddleware` sits at the top of the request pipeline, catching unhandled exceptions (including Validation errors), preventing app crashes, logging the errors, and mapping them to standardized HTTP responses.
+* **Domain-Specific Exceptions:** Repetitive error returns in the Service Layer have been replaced with clean, domain-specific exceptions (`NotFoundException`, `BadRequestException`, `UnauthorizedException`, `ConflictException`, `ValidationException`).
 
 ---
 
@@ -212,9 +214,7 @@ The project leverages **AutoMapper** profiles across the Service Layer to mainta
 * **Strict Collection Typing:** Synchronized mapped types directly with response wrapper expectations.
 
 ---
-
 ## ⏱️ Background Jobs (Hangfire)
-
 Hangfire is integrated with SQL Server persistence and a dashboard for job monitoring.
 
 **Automated Unpaid Order Cancellation:** When a Buyer places an order, a Hangfire **Delayed Job** is scheduled. If the order is still in `Pending` / unpaid status after the configured timeout, the job automatically cancels it and restores reserved stock — no manual intervention needed.
@@ -222,21 +222,14 @@ Hangfire is integrated with SQL Server persistence and a dashboard for job monit
 Hangfire Dashboard is available at: `/hangfire` (Admin only in production)
 
 ---
-
 ## 📋 Order Status Pipeline
-
 `OrderStatus` values are defined as constants (not raw strings) to prevent typos and enable IDE support:
-
 ```text
 Pending → Processing → Shipped → Delivered
                 ↘ Cancelled (by Buyer or auto-cancelled by background job)
-
 ```
-
 ---
-
 ## ⚙️ Configuration (`appsettings.json`)
-
 ```json
 {
   "ConnectionStrings": {
@@ -252,43 +245,30 @@ Pending → Processing → Shipped → Delivered
     "UnpaidCancellationMinutes": 30
   }
 }
-
 ```
-
 ---
-
 ## 🗄️ Database Setup
-
 ```bash
 dotnet ef database update
-
 ```
-
 Hangfire creates its own schema tables automatically on first run.
 
 ---
-
 ## 🏃 Running the Project
-
 ```bash
 git clone [https://github.com/MostafaAhmed-100/E-Commerce-API-V2.git](https://github.com/MostafaAhmed-100/E-Commerce-API-V2.git)
 cd E-Commerce-API-V2
-
 dotnet restore
 dotnet ef database update
 dotnet run
-
 ```
-
 * Swagger UI → `https://localhost:7132/swagger`
 * Hangfire Dashboard → `https://localhost:7132/hangfire`
-
 ---
-
 ## 🧠 Key Features
-
 | Feature | Details |
 | --- | --- |
+| **Clean Validation** | Fluent Validation rules separated from DTOs, enforced via a global Action Filter. |
 | **Centralized Error Handling** | Custom middleware intercepts exceptions and standardizes API responses. |
 | **Soft Delete** | Users, products, and orders are never hard-deleted; global query filters hide them automatically. |
 | **Product Variants** | Each product has multiple SKU variants (size, color, price, stock). |
@@ -301,13 +281,10 @@ dotnet run
 | **Response Time Header** | Every response includes `X-Response-Time` for performance monitoring. |
 
 ---
-
 ## 📁 Unified Response Format
-
 Every endpoint (whether successful or failed) returns the exact same wrapper shape, making frontend consumption seamless.
 
 **Example 1: Success Response (200 OK)**
-
 ```json
 {
   "isSuccess": true,
@@ -319,11 +296,8 @@ Every endpoint (whether successful or failed) returns the exact same wrapper sha
     "name": "Product Name"
   }
 }
-
 ```
-
 **Example 2: Error Response (404 Not Found handled by Middleware)**
-
 ```json
 {
   "isSuccess": false,
@@ -332,9 +306,7 @@ Every endpoint (whether successful or failed) returns the exact same wrapper sha
   "message": "The product does not exist.",
   "data": null
 }
-
 ```
-
 ---
 
 ## 🙏 Mentorship
@@ -347,11 +319,5 @@ Special thanks to the following mentors for their guidance throughout this proje
 | Omar Ahmed | [linkedin.com/in/omar-ahmed](https://www.google.com/search?q=https://www.linkedin.com/in/omar-ahmed-33a467298/) |
 
 ---
-
 ## 📜 License
-
 This project is open-source and available under the MIT License.
-
-```
-
-```

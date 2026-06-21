@@ -1,3 +1,4 @@
+using FluentValidation;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
@@ -10,6 +11,7 @@ using WebApplication1.Authentication;
 using WebApplication1.BackgroundJobs.OrderJobs;
 using WebApplication1.Data;
 using WebApplication1.Entitys;
+using WebApplication1.Filters;
 using WebApplication1.Middlewares;
 using WebApplication1.Repository.GenericRepository;
 using WebApplication1.Repository.SpecificRepository.AddressRepository;
@@ -36,10 +38,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddHangfire(x => x.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddHangfireServer();
+
 builder.Services.AddIdentity<User, Role>(options => {
-    options.Password.RequireDigit = true; 
+    options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = false;
@@ -56,7 +60,6 @@ builder.Services.AddIdentity<User, Role>(options => {
 
 builder.Services.Configure<JWT>(builder.Configuration.GetSection("Jwt"));
 var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!);
-
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -88,7 +91,7 @@ builder.Services.AddScoped<ICouponRepository, CouponRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISellerRepository, SellerRepository>();
-builder.Services.AddAutoMapper(configAction => { } ,AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddAutoMapper(configAction => { }, AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -97,8 +100,12 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICouponService, CouponService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IOrderBackgroundJobs ,  OrderBackgroundJobs>();
-builder.Services.AddControllers();
+builder.Services.AddScoped<IOrderBackgroundJobs, OrderBackgroundJobs>();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ValidationFilter>();
+});
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddRateLimiter(options =>
@@ -116,9 +123,9 @@ builder.Services.AddRateLimiter(options =>
     });
     options.AddTokenBucketLimiter("BrowsingPolicy", configureOptions =>
     {
-        configureOptions.TokenLimit = 100; 
+        configureOptions.TokenLimit = 100;
         configureOptions.ReplenishmentPeriod = TimeSpan.FromSeconds(1);
-        configureOptions.TokensPerPeriod = 10; 
+        configureOptions.TokensPerPeriod = 10;
         configureOptions.QueueLimit = 0;
     });
     options.AddTokenBucketLimiter("UserActivityPolicy", configureOptions =>
@@ -192,13 +199,9 @@ if (app.Environment.IsDevelopment())
     });
 }
 app.UseHangfireDashboard("/hangfire");
-
 app.UseHttpsRedirection();
-
 app.UseRateLimiter();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 app.Run();

@@ -9,6 +9,7 @@ namespace WebApplication1.DTOS.Request_DTOs
         public required decimal DiscountValue { get; set; }
         public required DateTime StartDate { get; set; }
         public required DateTime EndDate { get; set; }
+
         public int? UsageLimit { get; set; }
     }
 }

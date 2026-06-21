@@ -36,6 +36,10 @@ namespace WebApplication1.Middlewares
                     statusCode = 409;
                     message = conflictEx.Message;
                     break;
+                case ValidationException validationEx:
+                    statusCode = 400;
+                    message = validationEx.Message;
+                    break;
             }
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = statusCode;
