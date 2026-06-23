@@ -28,8 +28,6 @@ namespace WebApplication1.BackgroundJobs.OrderJobs
                 foreach (var item in OrderWithDetails.OrderItems)
                 {
                     item.ProductVariant.QuantityInStock += item.Quantity;
-
-                    item.ProductVariant.ReservedQuantity -= item.Quantity; 
                 }
                 _orderRepository.Update(Order);
                 if (OrderWithDetails.CouponId != null)

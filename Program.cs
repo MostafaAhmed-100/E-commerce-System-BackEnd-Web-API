@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Reflection;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
 using WebApplication1.Authentication;
 using WebApplication1.BackgroundJobs.OrderJobs;
@@ -81,7 +81,7 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(key)
     };
 });
-
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IAddressRepository, AddressRepository>();
 builder.Services.AddScoped<IBuyerRepository, BuyerRepository>();
@@ -101,10 +101,12 @@ builder.Services.AddScoped<ICouponService, CouponService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderBackgroundJobs, OrderBackgroundJobs>();
+
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ValidationFilter>();
 });
+
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -149,6 +151,7 @@ builder.Services.AddSwaggerGen(options =>
         Title = "E-Commerce API",
         Version = "V2"
     });
+    options.OperationFilter<AcceptLanguageHeaderFilter>();
 
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
@@ -176,7 +179,16 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+var supportedCultures = new[] { "en", "ar" };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture("en")
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+
+app.UseRequestLocalization(localizationOptions);
+
 app.UseMiddleware<ExceptionMiddleware>();
+
 app.Use(async (context, next) =>
 {
     var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -189,6 +201,7 @@ app.Use(async (context, next) =>
 
     await next();
 });
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -198,6 +211,7 @@ if (app.Environment.IsDevelopment())
         c.DisplayRequestDuration();
     });
 }
+
 app.UseHangfireDashboard("/hangfire");
 app.UseHttpsRedirection();
 app.UseRateLimiter();
@@ -205,3 +219,23 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+public class AcceptLanguageHeaderFilter : IOperationFilter
+{
+    public void Apply(OpenApiOperation operation, OperationFilterContext context)
+    {
+        operation.Parameters ??= new List<OpenApiParameter>();
+
+        operation.Parameters.Add(new OpenApiParameter
+        {
+            Name = "Accept-Language",
+            In = ParameterLocation.Header,
+            Description = "Select Language (en / ar)",
+            Required = false,
+            Schema = new OpenApiSchema
+            {
+                Type = "string",
+                Default = new Microsoft.OpenApi.Any.OpenApiString("en")
+            }
+        });
+    }
+}

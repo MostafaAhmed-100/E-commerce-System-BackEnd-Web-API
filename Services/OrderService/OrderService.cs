@@ -13,7 +13,6 @@ using WebApplication1.Repository.SpecificRepository.BuyerRepository;
 using WebApplication1.Repository.SpecificRepository.CartRepository;
 using WebApplication1.Repository.SpecificRepository.CouponRepository;
 using WebApplication1.Repository.SpecificRepository.OrderRepository;
-using WebApplication1.Repository.SpecificRepository.ProductRepository;
 
 namespace WebApplication1.Services.OrderService
 {
@@ -23,7 +22,6 @@ namespace WebApplication1.Services.OrderService
         private readonly ICartRepository _cartRepository;
         private readonly IAddressRepository _addressRepository;
         private readonly ICouponRepository _couponRepository;
-        private readonly IProductRepository _productRepository;
         private readonly IBuyerRepository _buyerRepository;
         private readonly IMapper _mapper;
 
@@ -32,7 +30,6 @@ namespace WebApplication1.Services.OrderService
             ICartRepository cartRepository,
             IAddressRepository addressRepository,
             ICouponRepository couponRepository,
-            IProductRepository productRepository,
             IBuyerRepository buyerRepository,
             IMapper mapper)
         {
@@ -41,7 +38,6 @@ namespace WebApplication1.Services.OrderService
             _cartRepository = cartRepository;
             _addressRepository = addressRepository;
             _couponRepository = couponRepository;
-            _productRepository = productRepository;
             _mapper = mapper;
         }
 

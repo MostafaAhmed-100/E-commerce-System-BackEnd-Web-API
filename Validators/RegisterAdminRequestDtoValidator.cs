@@ -1,26 +1,27 @@
 ﻿using FluentValidation;
+using Microsoft.Extensions.Localization;
 using WebApplication1.DTOS.Request_DTOs;
 
 namespace WebApplication1.Validators
 {
     public class RegisterAdminRequestDtoValidator : AbstractValidator<RegisterAdminRequestDto>
     {
-        public RegisterAdminRequestDtoValidator()
+        public RegisterAdminRequestDtoValidator(IStringLocalizer<SharedResource> localizer)
         {
             RuleFor(x => x.AdminEmail)
-                .NotEmpty().WithMessage("Admin email is required.")
-                .EmailAddress().WithMessage("A valid email address is required.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredEmail])
+                .EmailAddress().WithMessage(localizer[Constants.Resources.InvalidEmail]);
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("Password is required.")
-                .MinimumLength(7).WithMessage("Password must be at least 7 characters long.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredPassword])
+                .MinimumLength(7).WithMessage(localizer[Constants.Resources.MinLengthPassword]);
 
             RuleFor(x => x.UserName)
-                .NotEmpty().WithMessage("Username is required.")
-                .MaximumLength(100).WithMessage("Username cannot exceed 100 characters.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredUsername])
+                .MaximumLength(100).WithMessage(localizer[Constants.Resources.MaxUsername]);
 
             RuleFor(x => x.AdminSecretCode)
-                .NotEmpty().WithMessage("Admin secret code is required.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredAdminSecretCode]);
         }
     }
 }

@@ -1,27 +1,28 @@
 ﻿using FluentValidation;
+using Microsoft.Extensions.Localization;
 using WebApplication1.DTOS.Request_DTOs;
 
 namespace WebApplication1.Validators
 {
     public class RegisterRequestDtoValidator : AbstractValidator<RegisterRequestDto>
     {
-        public RegisterRequestDtoValidator()
+        public RegisterRequestDtoValidator(IStringLocalizer<SharedResource> localizer)
         {
             RuleFor(x => x.UserName)
-                .NotEmpty().WithMessage("Username is required.")
-                .MaximumLength(100).WithMessage("Username cannot exceed 100 characters.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredUsername])
+                .MaximumLength(100).WithMessage(localizer[Constants.Resources.MaxUsername]);
 
             RuleFor(x => x.Email)
-                .NotEmpty().WithMessage("Email is required.")
-                .EmailAddress().WithMessage("A valid email address is required.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredEmail])
+                .EmailAddress().WithMessage(localizer[Constants.Resources.InvalidEmail]);
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("Password is required.")
-                .MinimumLength(6).WithMessage("Password must be at least 6 characters long.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredPassword])
+                .MinimumLength(7).WithMessage(localizer[Constants.Resources.MinLengthPassword]); 
 
             RuleFor(x => x.ConfirmPassword)
-                .NotEmpty().WithMessage("Confirm password is required.")
-                .Equal(x => x.Password).WithMessage("Passwords do not match.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredConfirmPassword])
+                .Equal(x => x.Password).WithMessage(localizer[Constants.Resources.PasswordMismatch]);
         }
     }
 }

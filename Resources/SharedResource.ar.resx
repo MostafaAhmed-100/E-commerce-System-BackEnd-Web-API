@@ -1,0 +1,292 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="InvalidAddressId" xml:space="preserve">
+    <value>معرف العنوان يجب أن يكون أكبر من صفر.</value>
+  </data>
+  <data name="InvalidCartQuantity" xml:space="preserve">
+    <value>الكمية يجب أن تكون بين 1 و 100.</value>
+  </data>
+  <data name="InvalidCategoryId" xml:space="preserve">
+    <value>معرف التصنيف يجب أن يكون أكبر من صفر.</value>
+  </data>
+  <data name="InvalidDiscountType" xml:space="preserve">
+    <value>نوع الخصم غير صحيح.</value>
+  </data>
+  <data name="InvalidDiscountValue" xml:space="preserve">
+    <value>قيمة الخصم يجب أن تكون أكبر من صفر.</value>
+  </data>
+  <data name="InvalidEmail" xml:space="preserve">
+    <value>يجب إدخال بريد إلكتروني صحيح.</value>
+  </data>
+  <data name="InvalidEndDate" xml:space="preserve">
+    <value>تاريخ النهاية يجب أن يكون بعد تاريخ البداية.</value>
+  </data>
+  <data name="InvalidPageNumber" xml:space="preserve">
+    <value>رقم الصفحة يجب أن يكون 1 أو أكثر.</value>
+  </data>
+  <data name="InvalidPageSize" xml:space="preserve">
+    <value>عدد العناصر في الصفحة يجب أن يكون بين 1 و 50.</value>
+  </data>
+  <data name="InvalidParentCategoryId" xml:space="preserve">
+    <value>معرف التصنيف الأب يجب أن يكون أكبر من صفر.</value>
+  </data>
+  <data name="InvalidPhone" xml:space="preserve">
+    <value>صيغة رقم الهاتف غير صحيحة.</value>
+  </data>
+  <data name="InvalidPrice" xml:space="preserve">
+    <value>السعر يجب أن يكون بين 0 و 1,000,000.</value>
+  </data>
+  <data name="InvalidStartDate" xml:space="preserve">
+    <value>تاريخ البداية لا يمكن أن يكون في الماضي.</value>
+  </data>
+  <data name="InvalidStock" xml:space="preserve">
+    <value>الكمية في المخزن يجب أن تكون بين 0 و 1,000,000.</value>
+  </data>
+  <data name="InvalidUsageLimit" xml:space="preserve">
+    <value>حد الاستخدام يجب أن يكون أكبر من صفر.</value>
+  </data>
+  <data name="InvalidVariantId" xml:space="preserve">
+    <value>معرف الصنف (Variant ID) يجب أن يكون أكبر من صفر.</value>
+  </data>
+  <data name="MaxBankAccount" xml:space="preserve">
+    <value>رقم الحساب لا يمكن أن يتجاوز 90 حرف.</value>
+  </data>
+  <data name="MaxBankName" xml:space="preserve">
+    <value>اسم البنك لا يمكن أن يتجاوز 100 حرف.</value>
+  </data>
+  <data name="MaxCategoryName" xml:space="preserve">
+    <value>اسم التصنيف لا يمكن أن يتجاوز 100 حرف.</value>
+  </data>
+  <data name="MaxCity" xml:space="preserve">
+    <value>اسم المدينة لا يمكن أن يتجاوز 100 حرف.</value>
+  </data>
+  <data name="MaxColor" xml:space="preserve">
+    <value>اللون لا يمكن أن يتجاوز 50 حرف.</value>
+  </data>
+  <data name="MaxCouponCode" xml:space="preserve">
+    <value>كود الكوبون لا يمكن أن يتجاوز 50 حرف.</value>
+  </data>
+  <data name="MaxHomeAddress" xml:space="preserve">
+    <value>عنوان المنزل لا يمكن أن يتجاوز 100 حرف.</value>
+  </data>
+  <data name="MaxProductDesc" xml:space="preserve">
+    <value>وصف المنتج لا يمكن أن يتجاوز 1000 حرف</value>
+  </data>
+  <data name="MaxProductName" xml:space="preserve">
+    <value>اسم المنتج لا يمكن أن يتجاوز 100 حرف.</value>
+  </data>
+  <data name="MaxSize" xml:space="preserve">
+    <value>المقاس لا يمكن أن يتجاوز 50 حرف.</value>
+  </data>
+  <data name="MaxSKU" xml:space="preserve">
+    <value>كود الصنف لا يمكن أن يتجاوز 50 حرف.</value>
+  </data>
+  <data name="MaxState" xml:space="preserve">
+    <value>اسم المحافظة لا يمكن أن يتجاوز 100 حرف.</value>
+  </data>
+  <data name="MaxStoreName" xml:space="preserve">
+    <value>اسم المتجر لا يمكن أن يتجاوز 100 حرف.</value>
+  </data>
+  <data name="MaxTaxNumber" xml:space="preserve">
+    <value>الرقم الضريبي لا يمكن أن يتجاوز 50 حرف.</value>
+  </data>
+  <data name="MaxUsername" xml:space="preserve">
+    <value>اسم المستخدم لا يمكن أن يتجاوز 100 حرف.</value>
+  </data>
+  <data name="MaxZipCode" xml:space="preserve">
+    <value>الرمز البريدي لا يمكن أن يتجاوز 10 أرقام.</value>
+  </data>
+  <data name="MinLengthPassword" xml:space="preserve">
+    <value>كلمة المرور يجب ألا تقل عن 7 أحرف.</value>
+  </data>
+  <data name="NumbersOnlyZipCode" xml:space="preserve">
+    <value>الرمز البريدي يجب أن يحتوي على أرقام فقط.</value>
+  </data>
+  <data name="PasswordMismatch" xml:space="preserve">
+    <value>كلمتا المرور غير متطابقتين.</value>
+  </data>
+  <data name="RequiredAdminSecretCode" xml:space="preserve">
+    <value>الكود السري للمسؤول مطلوب.</value>
+  </data>
+  <data name="RequiredBankAccount" xml:space="preserve">
+    <value>رقم الحساب البنكي مطلوب.</value>
+  </data>
+  <data name="RequiredBankName" xml:space="preserve">
+    <value>اسم البنك مطلوب.</value>
+  </data>
+  <data name="RequiredCategoryName" xml:space="preserve">
+    <value>اسم التصنيف مطلوب.</value>
+  </data>
+  <data name="RequiredCity" xml:space="preserve">
+    <value>المدينة مطلوبة.</value>
+  </data>
+  <data name="RequiredConfirmPassword" xml:space="preserve">
+    <value>تأكيد كلمة المرور مطلوب.</value>
+  </data>
+  <data name="RequiredCouponCode" xml:space="preserve">
+    <value>كود الكوبون مطلوب</value>
+  </data>
+  <data name="RequiredEmail" xml:space="preserve">
+    <value>البريد الإلكتروني مطلوب</value>
+  </data>
+  <data name="RequiredEndDate" xml:space="preserve">
+    <value>تاريخ النهاية مطلوب.</value>
+  </data>
+  <data name="RequiredHomeAddress" xml:space="preserve">
+    <value>عنوان المنزل مطلوب.</value>
+  </data>
+  <data name="RequiredPassword" xml:space="preserve">
+    <value>كلمة المرور مطلوبة.</value>
+  </data>
+  <data name="RequiredPhone" xml:space="preserve">
+    <value>رقم الهاتف مطلوب.</value>
+  </data>
+  <data name="RequiredProductDesc" xml:space="preserve">
+    <value>وصف المنتج مطلوب.</value>
+  </data>
+  <data name="RequiredProductName" xml:space="preserve">
+    <value>اسم المنتج مطلوب.</value>
+  </data>
+  <data name="RequiredSKU" xml:space="preserve">
+    <value>كود الصنف (SKU) مطلوب.</value>
+  </data>
+  <data name="RequiredStartDate" xml:space="preserve">
+    <value>تاريخ البداية مطلوب.</value>
+  </data>
+  <data name="RequiredState" xml:space="preserve">
+    <value>المحافظة أو الولاية مطلوبة.</value>
+  </data>
+  <data name="RequiredStoreName" xml:space="preserve">
+    <value>اسم المتجر مطلوب.</value>
+  </data>
+  <data name="RequiredTaxNumber" xml:space="preserve">
+    <value>الرقم الضريبي مطلوب.</value>
+    <comment>سسسس</comment>
+  </data>
+  <data name="RequiredUsername" xml:space="preserve">
+    <value>اسم المستخدم مطلوب.</value>
+  </data>
+  <data name="RequiredVariants" xml:space="preserve">
+    <value>يجب إضافة صنف واحد على الأقل للمنتج (Variants).</value>
+  </data>
+  <data name="RequiredZipCode" xml:space="preserve">
+    <value>الرمز البريدي مطلوب.</value>
+  </data>
+</root>

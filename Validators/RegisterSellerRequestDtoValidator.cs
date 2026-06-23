@@ -1,45 +1,44 @@
 ﻿using FluentValidation;
+using Microsoft.Extensions.Localization;
 using WebApplication1.DTOS.Request_DTOs;
 
 namespace WebApplication1.Validators
 {
     public class RegisterSellerRequestDtoValidator : AbstractValidator<RegisterSellerRequestDto>
     {
-        public RegisterSellerRequestDtoValidator()
+        public RegisterSellerRequestDtoValidator(IStringLocalizer<SharedResource> localizer)
         {
             RuleFor(x => x.SellerEmail)
-                .NotEmpty().WithMessage("Seller email is required.")
-                .EmailAddress().WithMessage("A valid email address is required.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredEmail])
+                .EmailAddress().WithMessage(localizer[Constants.Resources.InvalidEmail]);
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("Password is required.")
-                .MinimumLength(7).WithMessage("Password must be at least 7 characters long.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredPassword])
+                .MinimumLength(7).WithMessage(localizer[Constants.Resources.MinLengthPassword]);
 
             RuleFor(x => x.UserName)
-                .NotEmpty().WithMessage("Username is required.")
-                .MaximumLength(100).WithMessage("Username cannot exceed 100 characters.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredUsername])
+                .MaximumLength(100).WithMessage(localizer[Constants.Resources.MaxUsername]);
 
             RuleFor(x => x.BankName)
-                .NotEmpty().WithMessage("Bank name is required.")
-                .MaximumLength(100).WithMessage("Bank name cannot exceed 100 characters.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredBankName])
+                .MaximumLength(100).WithMessage(localizer[Constants.Resources.MaxBankName]);
 
             RuleFor(x => x.BankAccountNumber)
-                .NotEmpty().WithMessage("Bank account number is required.")
-                .MaximumLength(90).WithMessage("Bank account number cannot exceed 90 characters.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredBankAccount])
+                .MaximumLength(90).WithMessage(localizer[Constants.Resources.MaxBankAccount]);
 
             RuleFor(x => x.StoreName)
-                .NotEmpty().WithMessage("Store name is required.")
-                .MaximumLength(100).WithMessage("Store name cannot exceed 100 characters.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredStoreName])
+                .MaximumLength(100).WithMessage(localizer[Constants.Resources.MaxStoreName]);
 
             RuleFor(x => x.TaxNumber)
-                .NotEmpty().WithMessage("Tax number is required.")
-                .MaximumLength(50).WithMessage("Tax number cannot exceed 50 characters.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredTaxNumber])
+                .MaximumLength(50).WithMessage(localizer[Constants.Resources.MaxTaxNumber]);
 
             RuleFor(P => P.PhoneNumber)
-                .NotEmpty().WithMessage("Phone number is required.")
-                .Matches(@"^\+?[0-9]{10,15}$").WithMessage("Invalid phone number format.");
-
-
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredPhone])
+                .Matches(@"^\+?[0-9]{10,15}$").WithMessage(localizer[Constants.Resources.InvalidPhone]);
         }
     }
 }

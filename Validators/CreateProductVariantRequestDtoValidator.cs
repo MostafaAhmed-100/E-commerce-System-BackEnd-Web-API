@@ -1,32 +1,28 @@
 ﻿using FluentValidation;
+using Microsoft.Extensions.Localization;
 using WebApplication1.DTOS.Request_DTOs;
 
 namespace WebApplication1.Validators
 {
     public class CreateProductVariantRequestDtoValidator : AbstractValidator<CreateProductVariantRequestDto>
     {
-        public CreateProductVariantRequestDtoValidator()
+        public CreateProductVariantRequestDtoValidator(IStringLocalizer<SharedResource> localizer)
         {
             RuleFor(x => x.SKU)
-                .NotEmpty().WithMessage("SKU is required.")
-                .MaximumLength(50)
-                .WithMessage("SKU cannot exceed 50 characters.");
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredSKU])
+                .MaximumLength(50).WithMessage(localizer[Constants.Resources.MaxSKU]);
 
             RuleFor(x => x.Price)
-                .InclusiveBetween(0, 1000000)
-                .WithMessage("Price must be between 0 and 1000000.");
+                .InclusiveBetween(0, 1000000).WithMessage(localizer[Constants.Resources.InvalidPrice]);
 
             RuleFor(x => x.QuantityInStock)
-                .InclusiveBetween(0, 1000000)
-                .WithMessage("Quantity in stock must be between 0 and 1000000.");
+                .InclusiveBetween(0, 1000000).WithMessage(localizer[Constants.Resources.InvalidStock]);
 
             RuleFor(x => x.Color)
-                .MaximumLength(50)
-                .WithMessage("Color cannot exceed 50 characters.");
+                .MaximumLength(50).WithMessage(localizer[Constants.Resources.MaxColor]);
 
             RuleFor(x => x.Size)
-                .MaximumLength(50)
-                .WithMessage("Size cannot exceed 50 characters.");
+                .MaximumLength(50).WithMessage(localizer[Constants.Resources.MaxSize]);
         }
     }
 }
