@@ -1,3 +1,4 @@
+markdown
 # 🛒 E-Commerce REST API V2
 
 ![.NET Core](https://img.shields.io/badge/.NET%208.0-Purple?style=for-the-badge&logo=dotnet)
@@ -13,7 +14,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 ## 🚀 Tech Stack
 
 | Layer | Technology |
-|---|---|
+| --- | --- |
 | **Framework** | ASP.NET Core 8 Web API |
 | **ORM** | Entity Framework Core |
 | **Database** | SQL Server |
@@ -36,7 +37,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 ├── Repository/
 │   ├── GenericRepository/     # Base CRUD operations
 │   └── SpecificRepository/    # Domain-specific queries
-├── Entities/                  # EF Core models
+├── Entities/                  # EF Core models (Clean POCOs)
 ├── DTOs/
 │   ├── Request_DTOs/          # Input models (pure data carriers)
 │   └── Response_DTOs/         # Output models (consistent wrapper)
@@ -48,7 +49,9 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 ├── Resources/                 # Localization files (English & Arabic)
 ├── Constants/                 # OrderStatus constants and other shared literals
 ├── BackgroundJobs/            # Hangfire job definitions
-└── Data/                      # AppDbContext + migrations
+└── Data/
+    ├── Configurations/        # EF Core Fluent API entity configurations
+    └── AppDbContext           # Context and migrations
 
 ```
 
@@ -77,7 +80,6 @@ To change the response language, simply pass the `Accept-Language` header in you
 ---
 
 ## 📦 API Endpoints
-
 
 ### 🔐 Auth — `/api/Auth`
 
@@ -160,7 +162,7 @@ To change the response language, simply pass the `Accept-Language` header in you
 
 JWT Bearer tokens are used across all protected endpoints. After login or registration, pass the token in every request:
 
-```text
+```http
 Authorization: Bearer <your_token>
 
 ```
@@ -190,10 +192,11 @@ Clients that exceed limits receive `429 Too Many Requests`.
 
 ---
 
-## ⚡ Performance Optimization & Pagination
+## ⚡ Performance Optimization & Database Architecture
 
 The project architecture has undergone significant data-layer refactoring to secure high throughput and minimize memory footprints under heavy production loads:
 
+* **Clean POCOs & Fluent API:** Completely stripped `Data Annotations` from domain entities. Relies exclusively on EF Core's `IEntityTypeConfiguration` (Fluent API) for schema generation, business logic constraints, default values, and index definitions, ensuring pure domain models.
 * **True Database-Level Pagination:** Completely decoupled list endpoints from in-memory processing. All `GET` list requests stream `PageNumber` and `PageSize` parameters straight to SQL Server using optimized `.Skip()` and `.Take()` operations.
 * **Separation of Concerns for Heavy Relationships:** To avoid massive memory allocations, large structural joins have been eliminated. Resources are retrieved efficiently as light, standalone entries.
 * **Aggressive No-Tracking Strategy:** Applied `.AsNoTracking()` globally across all read-only repository queries, bypassing EF Core's change tracker and providing immediate CPU and memory relief.
@@ -297,6 +300,7 @@ dotnet run
 
 | Feature | Details |
 | --- | --- |
+| **Clean Database Architecture** | Decoupled EF Core configurations using `IEntityTypeConfiguration` (Fluent API) instead of cluttered Data Annotations. |
 | **Clean Validation** | Fluent Validation rules separated from DTOs, enforced via a global Action Filter. |
 | **Centralized Error Handling** | Custom middleware intercepts exceptions and standardizes API responses. |
 | **Bilingual Support** | Full English and Arabic response localization based on the `Accept-Language` header. |

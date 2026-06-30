@@ -8,24 +8,14 @@ namespace WebApplication1.Entities
 
     public class Product
     {
-        [Key]
         public int ProductId { get; set; }
-        [Required]
         public required int SellerId { get; set; }
-        [Required]
         public required string ProductName { get; set; }
-
-        [Required]
         public  required string ProductDescription { get; set; }
         public  string? ImagePath { get; set; }
-        [Required]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-        [Required]
         public bool IsDeleted { get; set; } = false;
-        [Required]
         public required int CategoryId { get; set; }
-
-        [ForeignKey(nameof(CategoryId))]
         public Category Category { get; set; }
         public ICollection<Cart> Carts { get; set; } = new List<Cart>();
         public Seller Seller { get; set; }

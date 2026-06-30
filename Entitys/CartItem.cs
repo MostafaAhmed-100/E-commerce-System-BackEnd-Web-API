@@ -5,18 +5,11 @@ namespace WebApplication1.Entitys
 {
     public class CartItem
     {
-        [Key]
         public int CartItemId { get; set; }
         public  int CartId { get; set; }
-
-        [Required]
         public required int Quantity { get; set; }
-
-        [Required]
         public required int ProductVariantId { get; set; }
-        [Required, ForeignKey("CartId")]
         public Cart Cart { get; set; }
-        [Required, ForeignKey("ProductVariantId")]
         public ProductVariant ProductVariant { get; set; }
 
 
