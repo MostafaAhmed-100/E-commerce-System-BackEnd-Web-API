@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System.Data;
-using WebApplication1.Entities;
 using WebApplication1.Entitys;
 
 namespace WebApplication1.Data
@@ -12,6 +10,7 @@ namespace WebApplication1.Data
         {
         }
 
+        public DbSet<SavedCard> SavedCards { get; set; }
         public DbSet<Seller> Sellers { get; set; }
         public DbSet<Buyer> Buyers { get; set; }
         public DbSet<Category> Categories { get; set; }

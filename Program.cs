@@ -13,6 +13,7 @@ using WebApplication1.Data;
 using WebApplication1.Entitys;
 using WebApplication1.Filters;
 using WebApplication1.Middlewares;
+using WebApplication1.PaymentGateway.Services;
 using WebApplication1.Repository.GenericRepository;
 using WebApplication1.Repository.SpecificRepository.AddressRepository;
 using WebApplication1.Repository.SpecificRepository.BuyerRepository;
@@ -22,7 +23,9 @@ using WebApplication1.Repository.SpecificRepository.CategoryRepository.Interface
 using WebApplication1.Repository.SpecificRepository.CouponRepository;
 using WebApplication1.Repository.SpecificRepository.OrderRepository;
 using WebApplication1.Repository.SpecificRepository.ProductRepository;
+using WebApplication1.Repository.SpecificRepository.SavedCardRepository;
 using WebApplication1.Repository.SpecificRepository.SellerRepository;
+using WebApplication1.Services;
 using WebApplication1.Services.AccountService;
 using WebApplication1.Services.AddressService;
 using WebApplication1.Services.AuthService;
@@ -84,6 +87,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IAddressRepository, AddressRepository>();
+builder.Services.AddScoped<ISavedCardRepository, SavedCardRepository>();
 builder.Services.AddScoped<IBuyerRepository, BuyerRepository>();
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -101,6 +105,9 @@ builder.Services.AddScoped<ICouponService, CouponService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderBackgroundJobs, OrderBackgroundJobs>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<ISavedCardService, SavedCardService>();
+builder.Services.AddHttpClient();
 
 builder.Services.AddControllers(options =>
 {

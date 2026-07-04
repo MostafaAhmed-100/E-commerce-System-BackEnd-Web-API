@@ -8,5 +8,7 @@ namespace WebApplication1.Repository.SpecificRepository.OrderRepository
         Task<Order?> GetOrderWithDetailsAsync(int orderId, int buyerId);
 
         Task<(IEnumerable<Order> Items, int TotalCount)> GetOrdersListByBuyerIdAsync(int buyerId , int pageSize , int pageNumber);
+
+        Task<Order?> GetOrderWithItemsByIdAsync(int orderId);
     }
 }

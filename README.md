@@ -7,7 +7,7 @@ markdown
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)
 
-A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8 Web API**. The system supports three distinct roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, coupon discounts, rate limiting, background jobs, clean data validation, centralized exception handling, and full bilingual localization.
+A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8 Web API**. The system supports three distinct roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, payment gateway integration, coupon discounts, rate limiting, background jobs, clean data validation, centralized exception handling, and full bilingual localization.
 
 ---
 
@@ -25,6 +25,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 | **Localization** | ASP.NET Core Request Localization (`.resx`) |
 | **Rate Limiting** | ASP.NET Core Built-in Rate Limiting |
 | **Background Jobs** | Hangfire + Hangfire.SqlServer |
+| **External Integration**| HttpClientFactory (Payment Gateway Webhooks) |
 | **Error Handling** | Custom Exception Middleware + Action Filters |
 
 ---
@@ -63,7 +64,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 | --- | --- |
 | `Admin` | Manages categories, updates any order status. |
 | `Seller` | Creates/manages their own products, variants, and coupons. |
-| `Buyer` | Browses products, manages cart, places and cancels orders. |
+| `Buyer` | Browses products, manages cart, places and cancels orders, manages saved payment cards. |
 
 ---
 
@@ -137,15 +138,30 @@ To change the response language, simply pass the `Accept-Language` header in you
 | DELETE | `/Remove-Item/{variantId}` | ✅ Buyer | Remove an item from cart |
 | DELETE | `/Clear-Cart` | ✅ Buyer | Clear entire cart |
 
+### 💳 Saved Cards — `/api/SavedCard`
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/Add-Card` | ✅ Buyer | Securely save a payment card token |
+| GET | `/My-Cards` | ✅ Buyer | Retrieve all saved cards for the current buyer |
+| DELETE | `/Delete-Card/{cardId}` | ✅ Buyer | Soft-delete a saved card |
+
 ### 📋 Order — `/api/Order`
 
 | Method | Endpoint | Auth | Description |
 | --- | --- | --- | --- |
-| POST | `/Create-Order` | ✅ Buyer | Place order from cart (optional coupon code) |
+| POST | `/Create-Order` | ✅ Buyer | Place order from cart (supports saved cards & coupons) |
 | GET | `/My-Orders` | ✅ Buyer | List all orders for the current buyer (paginated) |
 | GET | `/Get-Order/{orderId}` | ✅ Buyer | Get full order details |
 | DELETE | `/Cancel-Order/{orderId}` | ✅ Buyer | Cancel a pending order (restores stock) |
 | PUT | `/Update-Status/{orderId}` | ✅ Admin/Seller | Move order through status pipeline |
+
+### 💸 Payment Gateway — `/api/Payment`
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/InitializePayment` | System | Internal routing for payment link generation |
+| POST | `/callback` | Webhook | Asynchronous callback to update order status |
 
 ### 🎟️ Coupon — `/api/Coupon`
 
@@ -241,7 +257,7 @@ Hangfire Dashboard is available at: `/hangfire` *(Admin only in production)*
 
 ```text
 Pending → Processing → Shipped → Delivered
-                ↘ Cancelled (by Buyer or auto-cancelled by background job)
+                ↘ Cancelled (by Buyer, Payment Failure, or auto-cancelled by background job)
 
 ```
 
@@ -300,13 +316,14 @@ dotnet run
 
 | Feature | Details |
 | --- | --- |
+| **Payment Gateway Integration** | Complete checkout flow with third-party webhooks, tokenized saved cards, and asynchronous payment verification. |
 | **Clean Database Architecture** | Decoupled EF Core configurations using `IEntityTypeConfiguration` (Fluent API) instead of cluttered Data Annotations. |
 | **Clean Validation** | Fluent Validation rules separated from DTOs, enforced via a global Action Filter. |
 | **Centralized Error Handling** | Custom middleware intercepts exceptions and standardizes API responses. |
 | **Bilingual Support** | Full English and Arabic response localization based on the `Accept-Language` header. |
 | **Soft Delete** | Users, products, and orders are never hard-deleted; global query filters hide them automatically. |
 | **Product Variants** | Each product has multiple SKU variants (size, color, price, stock). |
-| **Stock Management** | Reserved quantity tracking; stock is restored on cancellation. |
+| **Stock Management** | Reserved quantity tracking; stock is restored on cancellation or payment failure. |
 | **Coupon System** | Percentage or fixed-amount discounts with usage limits and date ranges. |
 | **True DB Pagination** | All list endpoints execute memory-optimized paging natively at the database level. |
 | **Global Query Filters** | Deleted records excluded at the EF Core level — no manual `.Where()` needed. |
@@ -365,7 +382,3 @@ Special thanks to the following mentors for their guidance throughout this proje
 ## 📜 License
 
 This project is open-source and available under the MIT License.
-
-```
-
-```

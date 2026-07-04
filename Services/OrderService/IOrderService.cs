@@ -14,5 +14,7 @@ namespace WebApplication1.Services.OrderService
         Task<ApiResponseDto<OrderResponseDto>> GetOrderByIdAsync(int orderId, int userId);
         Task<ApiResponseDto<string>> UpdateOrderStatusAsync(int orderId, string newStatus);
         Task<ApiResponseDto<string>> CancelOrderAsync(int orderId, int userId);
+
+        Task<ApiResponseDto<string>> HandlePaymentCallbackAsync(int orderId, bool isSuccess);
     }
 }

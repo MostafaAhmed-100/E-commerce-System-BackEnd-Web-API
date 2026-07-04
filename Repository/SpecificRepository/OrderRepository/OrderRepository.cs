@@ -36,5 +36,13 @@ namespace WebApplication1.Repository.SpecificRepository.OrderRepository
                 .AsNoTracking();
             return await ApplyPaginationAsync(query, pageNumber, pageSize);
         }
+
+        public async Task<Order?> GetOrderWithItemsByIdAsync(int orderId)
+        {
+            return await _AppDbcontext.Set<Order>()
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.ProductVariant)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+        }
     }
 }

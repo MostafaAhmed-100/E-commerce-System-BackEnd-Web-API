@@ -8,6 +8,8 @@ using WebApplication1.DTOS.Shared.RequestDto;
 using WebApplication1.DTOS.Shared.Response_DTOs;
 using WebApplication1.Entitys;
 using WebApplication1.Exceptions;
+using WebApplication1.PaymentGateway.External.Request;
+using WebApplication1.PaymentGateway.Services;
 using WebApplication1.Repository.SpecificRepository.AddressRepository;
 using WebApplication1.Repository.SpecificRepository.BuyerRepository;
 using WebApplication1.Repository.SpecificRepository.CartRepository;
@@ -23,6 +25,8 @@ namespace WebApplication1.Services.OrderService
         private readonly IAddressRepository _addressRepository;
         private readonly ICouponRepository _couponRepository;
         private readonly IBuyerRepository _buyerRepository;
+        private readonly IPaymentService _paymentService;
+        ISavedCardService _savedCardService;
         private readonly IMapper _mapper;
 
         public OrderService(
@@ -31,13 +35,17 @@ namespace WebApplication1.Services.OrderService
             IAddressRepository addressRepository,
             ICouponRepository couponRepository,
             IBuyerRepository buyerRepository,
+            ISavedCardService savedCardService,
+            IPaymentService paymentService,
             IMapper mapper)
         {
+            _savedCardService = savedCardService;
             _buyerRepository = buyerRepository;
             _orderRepository = orderRepository;
             _cartRepository = cartRepository;
             _addressRepository = addressRepository;
             _couponRepository = couponRepository;
+            _paymentService = paymentService;
             _mapper = mapper;
         }
 
@@ -59,6 +67,11 @@ namespace WebApplication1.Services.OrderService
             if (address == null || address.UserId != userId)
             {
                 throw new NotFoundException("The specified address was not found or does not belong to you.");
+            }
+            var SavedCard = await _savedCardService.GetMyCardsAsync(userId);
+            if (!SavedCard.Data.Any())
+            {
+                throw new NotFoundException("You Dont Have any Cards ");
             }
 
             decimal subtotal = 0;
@@ -142,12 +155,30 @@ namespace WebApplication1.Services.OrderService
 
             BackgroundJob.Schedule<IOrderBackgroundJobs>(
                 job => job.CheckAndCancelUnpaidOrderAsyn(order.OrderId),
-                TimeSpan.FromMinutes(1));
+                TimeSpan.FromMinutes(30));
 
+            var PaymentRequest = new PaymentRequestDto
+            {
+                CustomerEmail = buyer.User.Email,
+                CurrencyCode = createOrderRequestDto.CurrencyCode,
+                OrderId = order.OrderId,
+                CustomerName = buyer.User.UserName,
+                TotalAmount = finalTotal,
+            };
+            var InitializePaymentResponse = await _paymentService.InitializePayment(PaymentRequest);
+            if (InitializePaymentResponse.IsSuccess == false)
+            {
+                throw new BadRequestException("لرابط الخارجي غير صحيح أو السيرفر غير متاح" +
+                    "The payment has been decliend Order Status is Pending For 24 hours");
+                
+            }
+            var orderResponse = _mapper.Map<OrderResponseDto>(order);
+            orderResponse.CheckoutUrl = InitializePaymentResponse.CheckoutUrl;
             return new ApiResponseDto<OrderResponseDto>
             {
+
                 Message = "Order created successfully.",
-                Data = _mapper.Map<OrderResponseDto>(order)
+                Data = orderResponse
             };
         }
         public async Task<ApiResponseDto<PaginatedResponseDto<OrderResponseDto>>> GetOrdersByBuyerIdAsync(int buyerId, int userId, PaginationRequestDto paginationRequestDto)
@@ -274,6 +305,60 @@ namespace WebApplication1.Services.OrderService
             return new ApiResponseDto<string>
             {
                 Message = "Order cancelled successfully and stock has been restored.",
+                Data = null
+            };
+        }
+
+        public async Task<ApiResponseDto<string>> HandlePaymentCallbackAsync(int orderId, bool isSuccess)
+        {
+            var order = await _orderRepository.GetOrderWithItemsByIdAsync(orderId);
+
+            if (order == null || order.IsDeleted)
+            {
+                throw new NotFoundException("Order not found.");
+            }
+            if (order.Status == OrderStatus.cancelled)
+            {
+                throw new BadRequestException("This order is already cancelled");
+            }
+            if(order.Status == OrderStatus.successful)
+            {
+                throw new BadRequestException("This order has already been payed");
+            }
+
+            if (isSuccess)
+            {
+                order.Status = OrderStatus.successful;
+            }
+            else
+            {
+                order.Status = OrderStatus.cancelled;
+
+                foreach (var item in order.OrderItems)
+                {
+                    if (item.ProductVariant != null)
+                    {
+                        item.ProductVariant.QuantityInStock += item.Quantity;
+                    }
+                }
+
+                if (order.CouponId.HasValue)
+                {
+                    var coupon = await _couponRepository.GetByIdAsync(order.CouponId.Value);
+                    if (coupon != null && coupon.UsedCount > 0)
+                    {
+                        coupon.UsedCount -= 1;
+                        _couponRepository.Update(coupon);
+                    }
+                }
+            }
+
+            _orderRepository.Update(order);
+            await _orderRepository.SaveChangesAsync();
+
+            return new ApiResponseDto<string>
+            {
+                Message = isSuccess ? "Payment successful. Order is processing." : "Payment failed. Order cancelled and stock restored.",
                 Data = null
             };
         }

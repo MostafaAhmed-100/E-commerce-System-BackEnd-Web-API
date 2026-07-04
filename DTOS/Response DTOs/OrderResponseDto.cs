@@ -9,6 +9,7 @@
         public required decimal TotalAmount { get; set; }
         public required string Status { get; set; }
         public required string ShippingAddress { get; set; }
+        public string? CheckoutUrl { get; set; }
         public required List<OrderItemResponseDto> Items { get; set; }
     }
 }
