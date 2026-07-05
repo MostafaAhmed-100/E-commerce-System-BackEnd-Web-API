@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Serilog.Context;
+using System.Text.Json;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.Exceptions;
 
@@ -61,9 +62,12 @@ namespace WebApplication1.Middlewares
             }
             catch (Exception ex)
             {
-                _Ilogger.LogError(ex, ex.Message);
+                using (LogContext.PushProperty(name: "RequestPath", value: context.Request.Path))
+                {
+                    _Ilogger.LogError(ex, ex.Message);
 
-                await HandleExceptionAsync(context, ex);
+                    await HandleExceptionAsync(context, ex);
+                }
             }
         }
     }

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Logging;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.DTOS.Shared.RequestDto;
@@ -17,17 +18,20 @@ namespace WebApplication1.Services.ProductService
         private readonly ICategoryRepository _categoryRepository;
         private readonly ISellerRepository _sellerRepository;
         private readonly IMapper _mapper;
+        private readonly ILogger<ProductService> _logger;
 
         public ProductService(
             IProductRepository productRepository,
             ICategoryRepository categoryRepository,
             ISellerRepository sellerRepository,
-            IMapper mapper)
+            IMapper mapper,
+            ILogger<ProductService> logger)
         {
             _mapper = mapper;
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
             _sellerRepository = sellerRepository;
+            _logger = logger;
         }
 
         public async Task<ApiResponseDto<ProductResponseDto>> CreateProductAsync(CreateProductRequestDto createProductRequestDto, int sellerId)
@@ -35,12 +39,15 @@ namespace WebApplication1.Services.ProductService
             var category = await _categoryRepository.GetByIdAsync(createProductRequestDto.CategoryId);
             if (category == null)
             {
+                _logger.LogWarning("Seller {SellerId} attempted to create a " +
+                    "product in non-existent CategoryId {CategoryId}.", sellerId, createProductRequestDto.CategoryId);
                 throw new NotFoundException("The specified category does not exist.");
             }
 
             var seller = await _sellerRepository.GetByIdAsync(sellerId);
             if (seller == null)
             {
+                _logger.LogWarning("Attempted to create a product for non-existent SellerId {SellerId}.", sellerId);
                 throw new NotFoundException("The seller profile was not found.");
             }
 
@@ -50,6 +57,8 @@ namespace WebApplication1.Services.ProductService
 
             await _productRepository.AddAsync(product);
             await _productRepository.SaveChangesAsync();
+
+            _logger.LogInformation("Seller {SellerId} successfully created a new product {ProductId}.", sellerId, product.ProductId);
 
             return new ApiResponseDto<ProductResponseDto>
             {
@@ -64,17 +73,22 @@ namespace WebApplication1.Services.ProductService
 
             if (product == null || product.IsDeleted)
             {
+                _logger.LogWarning("Seller {SellerId} attempted to update non-existent or deleted ProductId {ProductId}.", sellerId, productId);
                 throw new NotFoundException("The product does not exist.");
             }
 
             if (product.SellerId != sellerId)
             {
+                _logger.LogWarning("Security Warning: Seller {SellerId} attempted" +
+                    " to update ProductId {ProductId} belonging to another seller.", sellerId, productId);
                 throw new UnauthorizedException("You do not have permission to update this product.");
             }
 
             var category = await _categoryRepository.GetByIdAsync(updateProductRequestDto.CategoryId);
             if (category == null)
             {
+                _logger.LogWarning("Seller {SellerId} attempted to update ProductId " +
+                    "{ProductId} with non-existent CategoryId {CategoryId}.", sellerId, productId, updateProductRequestDto.CategoryId);
                 throw new NotFoundException("The specified category does not exist.");
             }
 
@@ -132,6 +146,8 @@ namespace WebApplication1.Services.ProductService
             _productRepository.Update(product);
             await _productRepository.SaveChangesAsync();
 
+            _logger.LogInformation("Seller {SellerId} successfully updated ProductId {ProductId} and its variants.", sellerId, productId);
+
             return new ApiResponseDto<ProductResponseDto>
             {
                 Message = "Product updated successfully.",
@@ -144,17 +160,22 @@ namespace WebApplication1.Services.ProductService
             var product = await _productRepository.GetByIdAsync(productId);
             if (product == null || product.IsDeleted)
             {
+                _logger.LogWarning("Seller {SellerId} attempted to delete non-existent or already deleted ProductId {ProductId}.", sellerId, productId);
                 throw new NotFoundException("The product does not exist.");
             }
 
             if (product.SellerId != sellerId)
             {
+                _logger.LogWarning("Security Warning: Seller {SellerId}" +
+                    " attempted to delete ProductId {ProductId} belonging to another seller.", sellerId, productId);
                 throw new UnauthorizedException("You do not have permission to delete this product.");
             }
 
             product.IsDeleted = true;
             _productRepository.Update(product);
             await _productRepository.SaveChangesAsync();
+
+            _logger.LogInformation("Seller {SellerId} successfully soft-deleted ProductId {ProductId}.", sellerId, productId);
 
             return new ApiResponseDto<string>
             {
@@ -168,6 +189,7 @@ namespace WebApplication1.Services.ProductService
             var product = await _productRepository.GetByIdAsync(productId);
             if (product == null || product.IsDeleted)
             {
+                _logger.LogWarning("Attempted to retrieve non-existent or deleted ProductId {ProductId}.", productId);
                 throw new NotFoundException("The product does not exist.");
             }
 

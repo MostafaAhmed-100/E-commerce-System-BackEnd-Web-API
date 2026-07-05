@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Logging;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.Entitys;
@@ -11,11 +12,16 @@ namespace WebApplication1.Services
     {
         private readonly ISavedCardRepository _savedCardRepository;
         private readonly IMapper _mapper;
+        private readonly ILogger<SavedCardService> _logger;
 
-        public SavedCardService(ISavedCardRepository savedCardRepository, IMapper mapper)
+        public SavedCardService(
+            ISavedCardRepository savedCardRepository,
+            IMapper mapper,
+            ILogger<SavedCardService> logger)
         {
             _savedCardRepository = savedCardRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<ApiResponseDto<string>> AddCardAsync(AddSavedCardRequestDto dto, int userId)
@@ -28,8 +34,11 @@ namespace WebApplication1.Services
             var isSaved = await _savedCardRepository.SaveChangesAsync();
             if (!isSaved)
             {
+                _logger.LogError("Database error: Failed to save new card for User {UserId}.", userId);
                 throw new BadRequestException("حدث خطأ أثناء حفظ الكارت في قاعدة البيانات.");
             }
+
+            _logger.LogInformation("User {UserId} successfully added a new saved card.", userId);
 
             return new ApiResponseDto<string>
             {
@@ -66,6 +75,7 @@ namespace WebApplication1.Services
 
             if (card == null || card.UserId != userId || !card.IsActive)
             {
+                _logger.LogWarning("Security/Validation Warning: User {UserId} attempted to delete CardId {CardId} which is non-existent, unauthorized, or already inactive.", userId, cardId);
                 throw new NotFoundException("الكارت غير موجود أو لا تملك صلاحية حذفه.");
             }
 
@@ -75,8 +85,11 @@ namespace WebApplication1.Services
             var isUpdated = await _savedCardRepository.SaveChangesAsync();
             if (!isUpdated)
             {
+                _logger.LogError("Database error: Failed to soft-delete CardId {CardId} for User {UserId}.", cardId, userId);
                 throw new BadRequestException("حدث خطأ أثناء محاولة حذف الكارت من قاعدة البيانات.");
             }
+
+            _logger.LogInformation("User {UserId} successfully soft-deleted CardId {CardId}.", userId, cardId);
 
             return new ApiResponseDto<string>
             {

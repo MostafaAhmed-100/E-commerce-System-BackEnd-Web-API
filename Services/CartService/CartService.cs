@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Logging;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.Entitys;
@@ -14,12 +15,17 @@ namespace WebApplication1.Services.Implementation
         private readonly ICartRepository _cartRepository;
         private readonly IGenericRepository<ProductVariant> _variantRepository;
         private readonly IMapper _mapper;
+        private readonly ILogger<CartService> _logger;
 
-        public CartService(ICartRepository cartRepository, IGenericRepository<ProductVariant> variantRepository, IMapper mapper)
+        public CartService(ICartRepository cartRepository,
+            IGenericRepository<ProductVariant> variantRepository,
+            IMapper mapper,
+            ILogger<CartService> logger)
         {
             _cartRepository = cartRepository;
             _variantRepository = variantRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<ApiResponseDto<CartResponseDto>> GetCartBybuyerId(int buyerId)
@@ -57,10 +63,19 @@ namespace WebApplication1.Services.Implementation
         {
             var variant = await _variantRepository.GetByIdAsync(addToCartRequestDto.ProductVariantId);
             if (variant == null)
+            {
+                _logger.LogWarning("Buyer {BuyerId} attempted to add non-existent ProductVariant {ProductVariantId} to cart.", buyerId, addToCartRequestDto.ProductVariantId);
                 throw new NotFoundException("The product does not exist");
+            }
 
             if (variant.QuantityInStock < addToCartRequestDto.Quantity)
+            {
+                _logger.LogWarning("Buyer {BuyerId} requested Quantity {RequestedQuantity} " +
+                    "for ProductVariant {ProductVariantId}, but only {QuantityInStock} is available.",
+                    buyerId, addToCartRequestDto.Quantity, addToCartRequestDto.ProductVariantId,
+                    variant.QuantityInStock);
                 throw new BadRequestException("The Quantity Request is insufficient");
+            }
 
             var cart = await _cartRepository.GetCartWithItemsAsync(buyerId);
 
@@ -79,8 +94,12 @@ namespace WebApplication1.Services.Implementation
             if (existingItem != null)
             {
                 if (existingItem.Quantity + addToCartRequestDto.Quantity > variant.QuantityInStock)
+                {
+                    _logger.LogWarning("Buyer {BuyerId} attempted to increase Quantity for ProductVariant {ProductVariantId} by {RequestedQuantity}," +
+                        " but total exceeds available stock {QuantityInStock}.", buyerId,
+                        addToCartRequestDto.ProductVariantId, addToCartRequestDto.Quantity, variant.QuantityInStock);
                     throw new BadRequestException("Insufficient quantity in stock for the total amount");
-
+                }
                 existingItem.Quantity += addToCartRequestDto.Quantity;
             }
             else
@@ -93,6 +112,9 @@ namespace WebApplication1.Services.Implementation
             }
 
             await _cartRepository.SaveChangesAsync();
+            _logger.LogInformation("Buyer {BuyerId} successfully added Quantity {Quantity} " +
+                "of ProductVariant {ProductVariantId} to cart.", buyerId, addToCartRequestDto.Quantity, addToCartRequestDto.ProductVariantId);
+
             return await GetCartBybuyerId(buyerId);
         }
 
@@ -101,22 +123,40 @@ namespace WebApplication1.Services.Implementation
             var cart = await _cartRepository.GetCartWithItemsAsync(buyerId);
 
             if (cart == null)
+            {
+                _logger.LogWarning("Buyer {BuyerId} attempted to update item quantity but has no active cart.", buyerId);
                 throw new NotFoundException("This buyer has no Cart");
+            }
 
             var Item = cart.Items.FirstOrDefault(v => v.ProductVariantId == variantId);
             if (Item == null)
+            {
+                _logger.LogWarning("Buyer {BuyerId} attempted to update quantity for ProductVariant {VariantId} which is not in their cart.", buyerId, variantId);
                 throw new NotFoundException("That item Does not exist in The Cart");
+            }
 
             var ItemQuantity = await _variantRepository.GetByIdAsync(variantId);
             if (ItemQuantity == null)
+            {
+                _logger.LogWarning("Buyer {BuyerId} attempted to update quantity for ProductVariant {VariantId} which no longer exists in DB.", buyerId, variantId);
                 throw new NotFoundException("That item Does not exist in The DataBase");
+            }
 
             var freeQuantity = ItemQuantity.QuantityInStock - ItemQuantity.ReservedQuantity;
             if (freeQuantity < UpdateCartItemQuantityRequestDto.Quantity)
+            {
+                _logger.LogWarning("Buyer {BuyerId} requested update" +
+                    " to Quantity {RequestedQuantity} for ProductVariant {VariantId}, " +
+                    "but only {FreeQuantity} is free in stock.", buyerId, UpdateCartItemQuantityRequestDto.Quantity, variantId, freeQuantity);
                 throw new BadRequestException("The Quantity Ubdated Is More Than In Stock");
+            }
 
             Item.Quantity = UpdateCartItemQuantityRequestDto.Quantity;
             await _cartRepository.SaveChangesAsync();
+
+            _logger.LogInformation("Buyer {BuyerId} successfully" +
+                " updated quantity for ProductVariant {VariantId} to {NewQuantity}.", buyerId, variantId, UpdateCartItemQuantityRequestDto.Quantity);
+
             return await GetCartBybuyerId(buyerId);
         }
 
@@ -124,14 +164,23 @@ namespace WebApplication1.Services.Implementation
         {
             var cart = await _cartRepository.GetCartWithItemsAsync(buyerId);
             if (cart == null)
+            {
+                _logger.LogWarning("Buyer {BuyerId} attempted to remove an item but has no active cart.", buyerId);
                 throw new NotFoundException("This buyer has no Cart");
+            }
 
             var Item = cart.Items.FirstOrDefault(v => v.ProductVariantId == variantId);
             if (Item == null)
+            {
+                _logger.LogWarning("Buyer {BuyerId} attempted to remove ProductVariant {VariantId} which is not in their cart.", buyerId, variantId);
                 throw new NotFoundException("That item Does not exist in The Cart");
+            }
 
             cart.Items.Remove(Item);
             await _cartRepository.SaveChangesAsync();
+
+            _logger.LogInformation("Buyer {BuyerId} successfully removed ProductVariant {VariantId} from their cart.", buyerId, variantId);
+
             return await GetCartBybuyerId(buyerId);
         }
 
@@ -154,6 +203,9 @@ namespace WebApplication1.Services.Implementation
 
             cart.Items.Clear();
             await _cartRepository.SaveChangesAsync();
+
+            _logger.LogInformation("Buyer {BuyerId} successfully cleared their entire cart.", buyerId);
+
             return await GetCartBybuyerId(buyerId);
         }
     }

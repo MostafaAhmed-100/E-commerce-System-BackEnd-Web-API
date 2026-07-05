@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -21,6 +22,7 @@ namespace WebApplication1.Services.AuthService
         private readonly IConfiguration _configuration;
         private readonly IBuyerRepository _buyerRepository;
         private readonly ISellerRepository _sellerRepository;
+        private readonly ILogger<AuthService> _logger;
 
         public AuthService
         (
@@ -28,7 +30,8 @@ namespace WebApplication1.Services.AuthService
             RoleManager<Role> roleManager,
             IConfiguration configuration,
             IBuyerRepository buyerRepository,
-            ISellerRepository sellerRepository
+            ISellerRepository sellerRepository,
+            ILogger<AuthService> logger
         )
         {
             _userManager = userManager;
@@ -36,6 +39,7 @@ namespace WebApplication1.Services.AuthService
             _configuration = configuration;
             _buyerRepository = buyerRepository;
             _sellerRepository = sellerRepository;
+            _logger = logger;
         }
 
         private string GenerateJwtToken(string role, User user, int profileId)
@@ -66,7 +70,10 @@ namespace WebApplication1.Services.AuthService
         {
             var User = await _userManager.FindByEmailAsync(loginRequestDto.Email);
             if (User == null || !await _userManager.CheckPasswordAsync(User, loginRequestDto.Password))
+            {
+                _logger.LogWarning("Failed login attempt for email: {Email}.", loginRequestDto.Email);
                 throw new UnauthorizedException("Invalid email or password.");
+            }
 
             var userRoles = await _userManager.GetRolesAsync(User);
             var primaryRole = userRoles.FirstOrDefault() ?? AppRoles.Buyer;
@@ -76,7 +83,10 @@ namespace WebApplication1.Services.AuthService
             {
                 var buyer = await _buyerRepository.GetBuyerByUserId(User.Id);
                 if (buyer == null)
+                {
+                    _logger.LogWarning("Data inconsistency: Buyer profile missing for User {UserId}.", User.Id);
                     throw new NotFoundException("Profile not found or corrupted");
+                }
 
                 profileId = buyer.BuyerId;
             }
@@ -84,10 +94,15 @@ namespace WebApplication1.Services.AuthService
             {
                 var seller = await _sellerRepository.GetSellerIdByUserId(User.Id);
                 if (seller == null)
+                {
+                    _logger.LogWarning("Data inconsistency: Seller profile missing for User {UserId}.", User.Id);
                     throw new NotFoundException("Profile not found or corrupted");
+                }
 
                 profileId = seller.SellerId;
             }
+
+            _logger.LogInformation("User {UserId} logged in successfully as {Role}.", User.Id, primaryRole);
 
             return new ApiResponseDto<AuthResponseDto>
             {
@@ -106,7 +121,10 @@ namespace WebApplication1.Services.AuthService
         {
             var Email = await _userManager.FindByEmailAsync(registerRequestDto.Email);
             if (Email != null)
+            {
+                _logger.LogWarning("Registration failed: Attempt to register with already existing email {Email}.", registerRequestDto.Email);
                 throw new ConflictException("That Email Already Has An Account");
+            }
 
             var user = new User
             {
@@ -118,6 +136,7 @@ namespace WebApplication1.Services.AuthService
             if (!Result.Succeeded)
             {
                 var errors = string.Join(", ", Result.Errors.Select(e => e.Description));
+                _logger.LogWarning("User creation failed for {Email}. Errors: {Errors}", registerRequestDto.Email, errors);
                 throw new BadRequestException($"Failed to create user: {errors}");
             }
 
@@ -144,6 +163,8 @@ namespace WebApplication1.Services.AuthService
             }
             await _userManager.AddToRoleAsync(user, AppRoles.Buyer);
 
+            _logger.LogInformation("User {UserId} registered successfully as a Buyer.", user.Id);
+
             return new ApiResponseDto<AuthResponseDto>
             {
                 Data = new AuthResponseDto
@@ -160,11 +181,17 @@ namespace WebApplication1.Services.AuthService
         public async Task<ApiResponseDto<AuthResponseDto>> RegisterAdminAsync(RegisterAdminRequestDto registerAdminRequestDto)
         {
             if (registerAdminRequestDto.AdminSecretCode != _configuration["AdminSecretKey"])
+            {
+                _logger.LogWarning("SECURITY ALERT: Failed attempt to register Admin for email {Email} using an invalid secret code.", registerAdminRequestDto.AdminEmail);
                 throw new UnauthorizedException("The AdminSecretKey Is Wrong");
+            }
 
             var Email = await _userManager.FindByEmailAsync(registerAdminRequestDto.AdminEmail);
             if (Email != null)
+            {
+                _logger.LogWarning("Admin Registration failed: Attempt to register with already existing email {Email}.", registerAdminRequestDto.AdminEmail);
                 throw new ConflictException("That Email Already Has An Account");
+            }
 
             var user = new User
             {
@@ -176,6 +203,7 @@ namespace WebApplication1.Services.AuthService
             if (!Result.Succeeded)
             {
                 var errors = string.Join(", ", Result.Errors.Select(e => e.Description));
+                _logger.LogWarning("Admin creation failed for {Email}. Errors: {Errors}", registerAdminRequestDto.AdminEmail, errors);
                 throw new BadRequestException($"Failed to create user: {errors}");
             }
 
@@ -190,6 +218,8 @@ namespace WebApplication1.Services.AuthService
                 });
             }
             await _userManager.AddToRoleAsync(user, AppRoles.Admin);
+
+            _logger.LogInformation("Admin User {UserId} registered successfully.", user.Id);
 
             return new ApiResponseDto<AuthResponseDto>
             {
@@ -208,7 +238,10 @@ namespace WebApplication1.Services.AuthService
         {
             var Email = await _userManager.FindByEmailAsync(registerSellerRequestDto.SellerEmail);
             if (Email != null)
+            {
+                _logger.LogWarning("Seller Registration failed: Attempt to register with already existing email {Email}.", registerSellerRequestDto.SellerEmail);
                 throw new ConflictException("That Email Already Has An Account");
+            }
 
             var user = new User
             {
@@ -220,6 +253,7 @@ namespace WebApplication1.Services.AuthService
             if (!Result.Succeeded)
             {
                 var errors = string.Join(", ", Result.Errors.Select(e => e.Description));
+                _logger.LogWarning("Seller creation failed for {Email}. Errors: {Errors}", registerSellerRequestDto.SellerEmail, errors);
                 throw new BadRequestException($"Failed to create user: {errors}");
             }
 
@@ -248,6 +282,8 @@ namespace WebApplication1.Services.AuthService
             await _sellerRepository.AddAsync(Seller);
             await _sellerRepository.SaveChangesAsync();
             await _userManager.AddToRoleAsync(user, AppRoles.Seller);
+
+            _logger.LogInformation("Seller User {UserId} registered successfully for Store {StoreName}.", user.Id, Seller.StoreName);
 
             return new ApiResponseDto<AuthResponseDto>
             {

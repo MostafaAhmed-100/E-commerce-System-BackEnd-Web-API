@@ -13,13 +13,16 @@ namespace WebApplication1.Services.AccountService
         private readonly UserManager<User> _userManager;
         private readonly IBuyerRepository _buyerRepository;
         private readonly ISellerRepository _sellerRepository;
+        private readonly ILogger<AccountService> _logger;
         public AccountService
         (
+            ILogger<AccountService> logger,
             UserManager<User> userManager,
             IBuyerRepository buyerRepository,
             ISellerRepository sellerRepository
         )
         {
+            _logger = logger;
             _userManager = userManager;
             _buyerRepository = buyerRepository;
             _sellerRepository = sellerRepository;
@@ -29,12 +32,8 @@ namespace WebApplication1.Services.AccountService
             var User = await _userManager.FindByIdAsync(userId.ToString());
             if (User == null)
             {
+                _logger.LogWarning("User {UserId} account Not Found ", userId);
                 throw new NotFoundException("User not found");
-                return new ApiResponseDto<string>
-                {
-                    Data = null,
-                    Message = "User not found"
-                };
             }
             await _userManager.SetLockoutEnabledAsync(User, enabled: true);
             await _userManager.SetLockoutEndDateAsync(User, DateTimeOffset.MaxValue);
@@ -52,6 +51,7 @@ namespace WebApplication1.Services.AccountService
                 Seller.IsDeleted = true;
                 await _sellerRepository.SaveChangesAsync();
             }
+            _logger.LogInformation("User {UserId} account locked and profile soft-deleted. IsBuyer: {IsBuyer}, IsSeller: {IsSeller}", userId, isBuyer, IsSeller);
             return new ApiResponseDto<string>
             {
                 Data = null,

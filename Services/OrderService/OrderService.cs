@@ -15,6 +15,7 @@ using WebApplication1.Repository.SpecificRepository.BuyerRepository;
 using WebApplication1.Repository.SpecificRepository.CartRepository;
 using WebApplication1.Repository.SpecificRepository.CouponRepository;
 using WebApplication1.Repository.SpecificRepository.OrderRepository;
+using Microsoft.Extensions.Logging;
 
 namespace WebApplication1.Services.OrderService
 {
@@ -26,10 +27,12 @@ namespace WebApplication1.Services.OrderService
         private readonly ICouponRepository _couponRepository;
         private readonly IBuyerRepository _buyerRepository;
         private readonly IPaymentService _paymentService;
-        ISavedCardService _savedCardService;
+        private readonly ISavedCardService _savedCardService;
+        private readonly ILogger<OrderService> _logger;
         private readonly IMapper _mapper;
 
         public OrderService(
+            ILogger<OrderService> logger,
             IOrderRepository orderRepository,
             ICartRepository cartRepository,
             IAddressRepository addressRepository,
@@ -39,6 +42,7 @@ namespace WebApplication1.Services.OrderService
             IPaymentService paymentService,
             IMapper mapper)
         {
+            _logger = logger;
             _savedCardService = savedCardService;
             _buyerRepository = buyerRepository;
             _orderRepository = orderRepository;
@@ -54,23 +58,28 @@ namespace WebApplication1.Services.OrderService
             var Cart = await _cartRepository.GetCartWithItemsAsync(buyerId);
             if (Cart == null || !Cart.Items.Any())
             {
+                _logger.LogWarning("User {UserId} attempted to create an order but cart is empty for Buyer {BuyerId}.", userId, buyerId);
                 throw new BadRequestException("Your cart has no items to order.");
             }
 
             var buyer = await _buyerRepository.GetBuyerByUserId(userId);
             if (buyerId != buyer.BuyerId)
             {
+                _logger.LogWarning("Security Warning: User {UserId} attempted to create an order for unauthorized BuyerId {AttemptedBuyerId}.", userId, buyerId);
                 throw new UnauthorizedException("The provided Buyer ID does not belong to the authenticated user");
             }
 
             var address = await _addressRepository.GetByIdAsync(createOrderRequestDto.AddressId);
             if (address == null || address.UserId != userId)
             {
+                _logger.LogWarning("User {UserId} provided an invalid or unauthorized AddressId {AddressId}.", userId, createOrderRequestDto.AddressId);
                 throw new NotFoundException("The specified address was not found or does not belong to you.");
             }
+
             var SavedCard = await _savedCardService.GetMyCardsAsync(userId);
             if (!SavedCard.Data.Any())
             {
+                _logger.LogWarning("User {UserId} attempted to create an order without any saved cards.", userId);
                 throw new NotFoundException("You Dont Have any Cards ");
             }
 
@@ -80,6 +89,7 @@ namespace WebApplication1.Services.OrderService
                 var freeQuantity = item.ProductVariant.QuantityInStock - item.ProductVariant.ReservedQuantity;
                 if (freeQuantity < item.Quantity)
                 {
+                    _logger.LogWarning("User {UserId} tried to order {Quantity} of ProductVariant {VariantId} but only {Available} is available.", userId, item.Quantity, item.ProductVariantId, freeQuantity);
                     throw new BadRequestException($"Not enough stock for variant. Requested: {item.Quantity}, Available: {freeQuantity}.");
                 }
                 subtotal += item.Quantity * item.ProductVariant.Price;
@@ -97,6 +107,7 @@ namespace WebApplication1.Services.OrderService
                     appliedCoupon.EndDate < DateTime.UtcNow ||
                     (appliedCoupon.UsageLimit.HasValue && appliedCoupon.UsedCount >= appliedCoupon.UsageLimit))
                 {
+                    _logger.LogWarning("User {UserId} attempted to use invalid, expired, or depleted coupon {CouponCode}.", userId, createOrderRequestDto.CouponCode);
                     throw new BadRequestException("The provided coupon is invalid, expired, or has reached its usage limit.");
                 }
 
@@ -108,6 +119,8 @@ namespace WebApplication1.Services.OrderService
                 {
                     discountAmount = appliedCoupon.DiscountValue;
                 }
+
+                _logger.LogInformation("User {UserId} successfully applied coupon {CouponCode} with discount amount {DiscountAmount}.", userId, appliedCoupon.CouponCode, discountAmount);
             }
 
             decimal finalTotal = Math.Max(0, subtotal - discountAmount);
@@ -153,6 +166,8 @@ namespace WebApplication1.Services.OrderService
 
             await _orderRepository.SaveChangesAsync();
 
+            _logger.LogInformation("Order {OrderId} successfully created for Buyer {BuyerId} (User {UserId}) with TotalAmount {TotalAmount}.", order.OrderId, buyer.BuyerId, userId, finalTotal);
+
             BackgroundJob.Schedule<IOrderBackgroundJobs>(
                 job => job.CheckAndCancelUnpaidOrderAsyn(order.OrderId),
                 TimeSpan.FromMinutes(30));
@@ -165,13 +180,17 @@ namespace WebApplication1.Services.OrderService
                 CustomerName = buyer.User.UserName,
                 TotalAmount = finalTotal,
             };
+
             var InitializePaymentResponse = await _paymentService.InitializePayment(PaymentRequest);
             if (InitializePaymentResponse.IsSuccess == false)
             {
-                throw new BadRequestException("لرابط الخارجي غير صحيح أو السيرفر غير متاح" +
+                _logger.LogWarning("Payment initialization failed for Order {OrderId} belonging to User {UserId}.", order.OrderId, userId);
+                throw new BadRequestException("الرابط الخارجي غير صحيح أو السيرفر غير متاح" +
                     "The payment has been decliend Order Status is Pending For 24 hours");
-                
             }
+
+            _logger.LogInformation("Payment successfully initialized for Order {OrderId}. Checkout URL generated.", order.OrderId);
+
             var orderResponse = _mapper.Map<OrderResponseDto>(order);
             orderResponse.CheckoutUrl = InitializePaymentResponse.CheckoutUrl;
             return new ApiResponseDto<OrderResponseDto>
@@ -181,11 +200,13 @@ namespace WebApplication1.Services.OrderService
                 Data = orderResponse
             };
         }
+
         public async Task<ApiResponseDto<PaginatedResponseDto<OrderResponseDto>>> GetOrdersByBuyerIdAsync(int buyerId, int userId, PaginationRequestDto paginationRequestDto)
         {
             var buyer = await _buyerRepository.GetBuyerByUserId(userId);
             if (buyer == null || buyer.BuyerId != buyerId)
             {
+                _logger.LogWarning("Security Warning: User {UserId} attempted to view orders for unauthorized BuyerId {AttemptedBuyerId}.", userId, buyerId);
                 throw new UnauthorizedException("The provided Buyer ID does not belong to the authenticated user.");
             }
 
@@ -196,7 +217,6 @@ namespace WebApplication1.Services.OrderService
             );
 
             int totalPages = (int)Math.Ceiling(totalCount / (double)paginationRequestDto.PageSize);
-
             var mappedOrders = _mapper.Map<List<OrderResponseDto>>(orders);
 
             return new ApiResponseDto<PaginatedResponseDto<OrderResponseDto>>
@@ -225,6 +245,7 @@ namespace WebApplication1.Services.OrderService
 
             if (order == null || order.IsDeleted)
             {
+                _logger.LogWarning("User {UserId} requested Order {OrderId} which was not found or is unauthorized.", userId, orderId);
                 throw new NotFoundException("Order not found or you do not have permission to view it.");
             }
 
@@ -241,16 +262,22 @@ namespace WebApplication1.Services.OrderService
 
             if (order == null || order.IsDeleted)
             {
+                _logger.LogWarning("Attempted to update status for non-existent Order {OrderId}.", orderId);
                 throw new NotFoundException("The specified order does not exist.");
             }
 
             if (newStatus != OrderStatus.successful && newStatus != OrderStatus.cancelled && newStatus != OrderStatus.Pending)
             {
+                _logger.LogWarning("Attempted to update Order {OrderId} to invalid status {Status}.", orderId, newStatus);
                 throw new NotFoundException("The specified status does not exist. ");
             }
+
+            var oldStatus = order.Status;
             order.Status = newStatus;
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
+
+            _logger.LogInformation("Order {OrderId} status updated from {OldStatus} to {NewStatus}.", orderId, oldStatus, newStatus);
 
             return new ApiResponseDto<string>
             {
@@ -271,11 +298,13 @@ namespace WebApplication1.Services.OrderService
 
             if (order == null || order.IsDeleted)
             {
+                _logger.LogWarning("User {UserId} attempted to cancel Order {OrderId} which was not found.", userId, orderId);
                 throw new NotFoundException("Order not found.");
             }
 
             if (order.Status == OrderStatus.cancelled)
             {
+                _logger.LogWarning("User {UserId} attempted to cancel Order {OrderId} but it is already cancelled.", userId, orderId);
                 throw new BadRequestException($"Order cannot be cancelled because it is already {order.Status}.");
             }
 
@@ -302,6 +331,8 @@ namespace WebApplication1.Services.OrderService
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
 
+            _logger.LogInformation("Order {OrderId} was successfully cancelled by User {UserId}. Stock and coupon limits have been restored.", orderId, userId);
+
             return new ApiResponseDto<string>
             {
                 Message = "Order cancelled successfully and stock has been restored.",
@@ -315,24 +346,30 @@ namespace WebApplication1.Services.OrderService
 
             if (order == null || order.IsDeleted)
             {
+                _logger.LogWarning("Payment Callback received for non-existent Order {OrderId}.", orderId);
                 throw new NotFoundException("Order not found.");
             }
             if (order.Status == OrderStatus.cancelled)
             {
+                _logger.LogWarning("Payment Callback received for Order {OrderId} but order is already cancelled.", orderId);
                 throw new BadRequestException("This order is already cancelled");
             }
-            if(order.Status == OrderStatus.successful)
+            if (order.Status == OrderStatus.successful)
             {
+                _logger.LogWarning("Payment Callback received for Order {OrderId} but it has already been paid.", orderId);
                 throw new BadRequestException("This order has already been payed");
             }
 
             if (isSuccess)
             {
                 order.Status = OrderStatus.successful;
+                _logger.LogInformation("Payment Callback: Payment SUCCESSFUL for Order {OrderId}. Status updated to successful.", orderId);
             }
             else
             {
                 order.Status = OrderStatus.cancelled;
+
+                _logger.LogInformation("Payment Callback: Payment FAILED for Order {OrderId}. Order cancelled, restoring stock.", orderId);
 
                 foreach (var item in order.OrderItems)
                 {

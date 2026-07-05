@@ -4,6 +4,6 @@ namespace WebApplication1.DTOS.Request_DTOs
 {
     public class UpdateCartItemQuantityRequestDto
     {
-        public int Quantity { get; set; }
+        public required int Quantity { get; set; }
     }
 }

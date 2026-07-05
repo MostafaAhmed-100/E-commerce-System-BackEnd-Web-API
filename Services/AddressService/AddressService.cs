@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Logging;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.DTOS.Shared.Response_DTOs;
@@ -12,13 +13,16 @@ namespace WebApplication1.Services.AddressService
     {
         private readonly IAddressRepository _addressRepository;
         private readonly IMapper _mapper;
+        private readonly ILogger<AddressService> _logger;
 
-        public AddressService(IAddressRepository addressRepository,
-            IMapper mapper
-            )
+        public AddressService(
+            IAddressRepository addressRepository,
+            IMapper mapper,
+            ILogger<AddressService> logger)
         {
-            _mapper = mapper;
             _addressRepository = addressRepository;
+            _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<ApiResponseDto<AddressResponseDto>> CreateAddressAsync(CreateAddressRequestDto createAddressRequestDto, int userId)
@@ -27,6 +31,8 @@ namespace WebApplication1.Services.AddressService
             address.UserId = userId;
             await _addressRepository.AddAsync(address);
             await _addressRepository.SaveChangesAsync();
+
+            _logger.LogInformation("User {UserId} successfully created a new address {AddressId}.", userId, address.AddressId);
 
             return new ApiResponseDto<AddressResponseDto>
             {
@@ -41,19 +47,22 @@ namespace WebApplication1.Services.AddressService
 
             if (address == null)
             {
+                _logger.LogWarning("User {UserId} attempted to update non-existent Address {AddressId}.", userId, addressId);
                 throw new NotFoundException("The address does not exist.");
             }
 
             if (address.UserId != userId)
             {
+                _logger.LogWarning("Security Warning: User {UserId} attempted to update Address {AddressId} belonging to another user.", userId, addressId);
                 throw new UnauthorizedException("You do not have permission to update this address.");
             }
 
-            _mapper.Map<Address>(updateAddressRequestDto);
-
+            _mapper.Map(updateAddressRequestDto, address);
 
             _addressRepository.Update(address);
             await _addressRepository.SaveChangesAsync();
+
+            _logger.LogInformation("User {UserId} successfully updated Address {AddressId}.", userId, addressId);
 
             return new ApiResponseDto<AddressResponseDto>
             {
@@ -68,16 +77,20 @@ namespace WebApplication1.Services.AddressService
 
             if (address == null)
             {
+                _logger.LogWarning("User {UserId} attempted to delete non-existent Address {AddressId}.", userId, addressId);
                 throw new NotFoundException("The address does not exist.");
             }
 
             if (address.UserId != userId)
             {
+                _logger.LogWarning("Security Warning: User {UserId} attempted to delete Address {AddressId} belonging to another user.", userId, addressId);
                 throw new UnauthorizedException("You do not have permission to delete this address.");
             }
 
             _addressRepository.Delete(address);
             await _addressRepository.SaveChangesAsync();
+
+            _logger.LogInformation("User {UserId} successfully deleted Address {AddressId}.", userId, addressId);
 
             return new ApiResponseDto<string>
             {
@@ -92,11 +105,13 @@ namespace WebApplication1.Services.AddressService
 
             if (address == null)
             {
+                _logger.LogWarning("User {UserId} attempted to retrieve non-existent Address {AddressId}.", userId, addressId);
                 throw new NotFoundException("The address does not exist.");
             }
 
             if (address.UserId != userId)
             {
+                _logger.LogWarning("Security Warning: User {UserId} attempted to retrieve Address {AddressId} belonging to another user.", userId, addressId);
                 throw new UnauthorizedException("You do not have permission to view this address.");
             }
 
