@@ -62,9 +62,16 @@ namespace WebApplication1.Middlewares
             }
             catch (Exception ex)
             {
-                using (LogContext.PushProperty(name: "RequestPath", value: context.Request.Path))
+                using (LogContext.PushProperty("RequestPath", context.Request.Path))
                 {
-                    _Ilogger.LogError(ex, ex.Message);
+                    if (ex is NotFoundException || ex is BadRequestException || ex is UnauthorizedException || ex is ConflictException)
+                    {
+                        _Ilogger.LogWarning(ex.Message);
+                    }
+                    else
+                    {
+                        _Ilogger.LogError(ex, "Unhandled Exception: {Message}", ex.Message);
+                    }
 
                     await HandleExceptionAsync(context, ex);
                 }
