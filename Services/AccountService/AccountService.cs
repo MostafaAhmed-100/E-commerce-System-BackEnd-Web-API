@@ -1,4 +1,6 @@
-﻿using WebApplication1.DTOS.Request_DTOs;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.Entitys;
 using WebApplication1.Exceptions;
@@ -27,6 +29,33 @@ namespace WebApplication1.Services.AccountService
             _buyerRepository = buyerRepository;
             _sellerRepository = sellerRepository;
         }
+
+        public async Task<ApiResponseDto<string>> ChangePasswordAsync(ChangePasswordRequestDto changePasswordRequestDto, int userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null)
+            {
+                _logger.LogWarning("User {UserId} account Not Found ", userId);
+                throw new NotFoundException("User not found");
+            }
+            var changedPassword = await _userManager.ChangePasswordAsync(user, changePasswordRequestDto.CurrentPassword , changePasswordRequestDto.NewPassword);
+            if (changedPassword.Succeeded == false)
+            {
+                var errors = string.Join(", ", changedPassword.Errors.Select(e => e.Description));
+                _logger.LogWarning("User {UserId} failed to change password due to An Error {errors}.", userId, errors);
+                throw new BadRequestException($"There is an Error {errors}");
+            }
+            else
+            {
+                _logger.LogInformation("User {UserId} changed their password successfully.", userId);
+                return new ApiResponseDto<string>
+                {
+                    Message = "Your PassWord Has Been Changed successfully",
+                    Data = null
+                };
+            }
+        }
+
         public async Task<ApiResponseDto<string>> DeleteAccountAsync(int userId)
         {
             var User = await _userManager.FindByIdAsync(userId.ToString());

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
+using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.Services.AccountService;
 
 namespace WebApplication1.Controllers
@@ -28,6 +29,15 @@ namespace WebApplication1.Controllers
             var DeleteAccount = await _accountService.DeleteAccountAsync(userId);
 
             return StatusCode(DeleteAccount.StatusCode, DeleteAccount);
+        }
+        [HttpPost("Change-Password")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordRequestDto changePasswordRequestDto)
+        {
+            var userId = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var ChangePassword = await _accountService.ChangePasswordAsync( changePasswordRequestDto , userId);
+
+            return StatusCode(ChangePassword.StatusCode, ChangePassword);
         }
     }
 }
