@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System.ComponentModel.Design;
 using System.Text;
 using WebApplication1.Authentication;
 using WebApplication1.BackgroundJobs.OrderJobs;
@@ -24,6 +25,7 @@ using WebApplication1.Repository.SpecificRepository.CategoryRepository.Interface
 using WebApplication1.Repository.SpecificRepository.CouponRepository;
 using WebApplication1.Repository.SpecificRepository.OrderRepository;
 using WebApplication1.Repository.SpecificRepository.ProductRepository;
+using WebApplication1.Repository.SpecificRepository.RefreshTokenRepository;
 using WebApplication1.Repository.SpecificRepository.SavedCardRepository;
 using WebApplication1.Repository.SpecificRepository.SellerRepository;
 using WebApplication1.Services;
@@ -110,6 +112,9 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderBackgroundJobs, OrderBackgroundJobs>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ISavedCardService, SavedCardService>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
+
 builder.Services.AddHttpClient();
 
 builder.Services.AddControllers(options =>

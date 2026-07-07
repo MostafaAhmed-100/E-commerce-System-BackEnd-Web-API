@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using WebApplication1.Constants;
 using WebApplication1.DTOS.Request_DTOs;
@@ -10,6 +11,7 @@ using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.Entitys;
 using WebApplication1.Exceptions;
 using WebApplication1.Repository.SpecificRepository.BuyerRepository;
+using WebApplication1.Repository.SpecificRepository.RefreshTokenRepository;
 using WebApplication1.Repository.SpecificRepository.SellerRepository;
 using WebApplication1.Services.Interface;
 
@@ -23,6 +25,7 @@ namespace WebApplication1.Services.AuthService
         private readonly IBuyerRepository _buyerRepository;
         private readonly ISellerRepository _sellerRepository;
         private readonly ILogger<AuthService> _logger;
+        private readonly IRefreshTokenRepository _refreshTokenRepository;
 
         public AuthService
         (
@@ -31,7 +34,8 @@ namespace WebApplication1.Services.AuthService
             IConfiguration configuration,
             IBuyerRepository buyerRepository,
             ISellerRepository sellerRepository,
-            ILogger<AuthService> logger
+            ILogger<AuthService> logger,
+            IRefreshTokenRepository refreshTokenRepository
         )
         {
             _userManager = userManager;
@@ -40,6 +44,7 @@ namespace WebApplication1.Services.AuthService
             _buyerRepository = buyerRepository;
             _sellerRepository = sellerRepository;
             _logger = logger;
+            _refreshTokenRepository = refreshTokenRepository;
         }
 
         private string GenerateJwtToken(string role, User user, int profileId)
@@ -60,7 +65,7 @@ namespace WebApplication1.Services.AuthService
                     audience: _configuration["Jwt:Audience"],
                     claims: Clames,
                     signingCredentials: Credentials,
-                    expires: DateTime.UtcNow.AddDays(2)
+                    expires: DateTime.UtcNow.AddMinutes(1)
                 );
             var JwtSecurityTokenHandler = new JwtSecurityTokenHandler();
             return JwtSecurityTokenHandler.WriteToken(Token);
@@ -103,7 +108,18 @@ namespace WebApplication1.Services.AuthService
             }
 
             _logger.LogInformation("User {UserId} logged in successfully as {Role}.", User.Id, primaryRole);
+            var random = GenerateRefreshTokenString();
 
+            var refreshtoken = new RefreshToken
+            {
+                CreatedOn = DateTime.UtcNow,
+                ExpiresOn = DateTime.UtcNow.AddDays(7),
+                RevokedOn = null,
+                Token = random,
+                UserId = User.Id
+            };
+            await _refreshTokenRepository.AddAsync(refreshtoken);
+            await _refreshTokenRepository.SaveChangesAsync();
             return new ApiResponseDto<AuthResponseDto>
             {
                 Data = new AuthResponseDto
@@ -111,7 +127,9 @@ namespace WebApplication1.Services.AuthService
                     Token = GenerateJwtToken(primaryRole, User, profileId),
                     Expiration = DateTime.UtcNow.AddHours(1),
                     Email = User.Email,
-                    Role = primaryRole
+                    Role = primaryRole,
+                    RefreshToken = refreshtoken.Token,
+                    RefreshTokenExpiration = refreshtoken.ExpiresOn
                 },
                 Message = "Login successful."
             };
@@ -164,7 +182,18 @@ namespace WebApplication1.Services.AuthService
             await _userManager.AddToRoleAsync(user, AppRoles.Buyer);
 
             _logger.LogInformation("User {UserId} registered successfully as a Buyer.", user.Id);
+            var random = GenerateRefreshTokenString();
 
+            var refreshtoken = new RefreshToken
+            {
+                CreatedOn = DateTime.UtcNow,
+                ExpiresOn = DateTime.UtcNow.AddDays(7),
+                RevokedOn = null,
+                Token = random,
+                UserId = user.Id
+            };
+            await _refreshTokenRepository.AddAsync(refreshtoken);
+            await _refreshTokenRepository.SaveChangesAsync();
             return new ApiResponseDto<AuthResponseDto>
             {
                 Data = new AuthResponseDto
@@ -172,7 +201,9 @@ namespace WebApplication1.Services.AuthService
                     Token = GenerateJwtToken(AppRoles.Buyer, user, Buyer.BuyerId),
                     Expiration = DateTime.UtcNow.AddHours(24),
                     Email = user.Email,
-                    Role = AppRoles.Buyer
+                    Role = AppRoles.Buyer,
+                    RefreshToken = refreshtoken.Token,
+                    RefreshTokenExpiration = refreshtoken.ExpiresOn,
                 },
                 Message = "User registered successfully as a Buyer."
             };
@@ -220,7 +251,19 @@ namespace WebApplication1.Services.AuthService
             await _userManager.AddToRoleAsync(user, AppRoles.Admin);
 
             _logger.LogInformation("Admin User {UserId} registered successfully.", user.Id);
+            var random = GenerateRefreshTokenString();
 
+            var refreshtoken = new RefreshToken
+            {
+                CreatedOn = DateTime.UtcNow,
+                ExpiresOn = DateTime.UtcNow.AddDays(7),
+                RevokedOn = null,
+                Token = random,
+                UserId = user.Id
+            };
+            await _refreshTokenRepository.AddAsync(refreshtoken);
+            await _refreshTokenRepository.SaveChangesAsync();
+            
             return new ApiResponseDto<AuthResponseDto>
             {
                 Data = new AuthResponseDto
@@ -228,7 +271,9 @@ namespace WebApplication1.Services.AuthService
                     Token = GenerateJwtToken(AppRoles.Admin, user, 0),
                     Expiration = DateTime.UtcNow.AddHours(100),
                     Email = user.Email,
-                    Role = AppRoles.Admin
+                    Role = AppRoles.Admin,
+                    RefreshToken = refreshtoken.Token,
+                    RefreshTokenExpiration = refreshtoken.ExpiresOn
                 },
                 Message = "User registered successfully as a Admin."
             };
@@ -284,7 +329,18 @@ namespace WebApplication1.Services.AuthService
             await _userManager.AddToRoleAsync(user, AppRoles.Seller);
 
             _logger.LogInformation("Seller User {UserId} registered successfully for Store {StoreName}.", user.Id, Seller.StoreName);
+            var random = GenerateRefreshTokenString();
 
+            var refreshtoken = new RefreshToken
+            {
+                CreatedOn = DateTime.UtcNow,
+                ExpiresOn = DateTime.UtcNow.AddDays(7),
+                RevokedOn = null,
+                Token = random,
+                UserId = user.Id
+            };
+            await _refreshTokenRepository.AddAsync(refreshtoken);
+            await _refreshTokenRepository.SaveChangesAsync();
             return new ApiResponseDto<AuthResponseDto>
             {
                 Data = new AuthResponseDto
@@ -292,10 +348,86 @@ namespace WebApplication1.Services.AuthService
                     Token = GenerateJwtToken(AppRoles.Seller, user, Seller.SellerId),
                     Expiration = DateTime.UtcNow.AddHours(30),
                     Email = user.Email,
-                    Role = AppRoles.Seller
+                    Role = AppRoles.Seller,
+                    RefreshToken = refreshtoken.Token,
+                    RefreshTokenExpiration = refreshtoken.ExpiresOn,
                 },
                 Message = "User registered successfully as a Seller."
             };
+        }
+        public async Task<ApiResponseDto<AuthResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto refreshTokenRequestDto)
+        {
+            var existingToken = await _refreshTokenRepository.GetByTokenAsync(refreshTokenRequestDto.Token);
+
+            if (existingToken == null || !existingToken.IsActive)
+            {
+                _logger.LogWarning("Security Warning: Attempted to use an invalid, expired, or revoked refresh token.");
+                throw new UnauthorizedException("Invalid or Expired Refresh Token. Please login again.");
+            }
+
+            existingToken.RevokedOn = DateTime.UtcNow;
+            _refreshTokenRepository.Update(existingToken);
+
+            var user = await _userManager.FindByIdAsync(existingToken.UserId.ToString());
+            if (user == null)
+            {
+                throw new NotFoundException("User associated with this token no longer exists.");
+            }
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            var primaryRole = userRoles.FirstOrDefault() ?? AppRoles.Buyer;
+            int profileId = 0;
+
+            if (primaryRole == AppRoles.Buyer)
+            {
+                var buyer = await _buyerRepository.GetBuyerByUserId(user.Id);
+                if (buyer != null) profileId = buyer.BuyerId;
+            }
+            else if (primaryRole == AppRoles.Seller)
+            {
+                var seller = await _sellerRepository.GetSellerIdByUserId(user.Id);
+                if (seller != null) profileId = seller.SellerId;
+            }
+
+            var newJwtToken = GenerateJwtToken(primaryRole, user, profileId);
+            var newRefreshTokenString = GenerateRefreshTokenString();
+
+            var newRefreshToken = new RefreshToken
+            {
+                CreatedOn = DateTime.UtcNow,
+                ExpiresOn = DateTime.UtcNow.AddDays(7),
+                RevokedOn = null,
+                Token = newRefreshTokenString,
+                UserId = user.Id
+            };
+
+            await _refreshTokenRepository.AddAsync(newRefreshToken);
+            await _refreshTokenRepository.SaveChangesAsync();
+
+            _logger.LogInformation("Refresh token successfully exchanged for User {UserId}.", user.Id);
+
+            return new ApiResponseDto<AuthResponseDto>
+            {
+                Data = new AuthResponseDto
+                {
+                    Token = newJwtToken,
+                    Expiration = DateTime.UtcNow.AddHours(1),
+                    Email = user.Email,
+                    Role = primaryRole,
+                    RefreshToken = newRefreshToken.Token,
+                    RefreshTokenExpiration = newRefreshToken.ExpiresOn
+                },
+                Message = "Token refreshed successfully."
+            };
+        }
+
+        private string GenerateRefreshTokenString()
+        {
+            var randomNumber = new byte[32];
+
+            RandomNumberGenerator.Fill(randomNumber);
+
+            return Convert.ToBase64String(randomNumber);
         }
     }
 }

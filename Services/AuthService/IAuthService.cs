@@ -13,5 +13,7 @@ namespace WebApplication1.Services.Interface
         Task<ApiResponseDto<AuthResponseDto>> RegisterAdminAsync (RegisterAdminRequestDto registerAdminRequestDto);
 
         Task<ApiResponseDto<AuthResponseDto>> RegisterSellerAsync (RegisterSellerRequestDto registerSellerRequestDto);
+
+        Task<ApiResponseDto<AuthResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto refreshTokenRequestDto);
     }
 }

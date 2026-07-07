@@ -45,5 +45,12 @@ namespace WebApplication1.Controllers
             var Result = await _authService.RegisterAdminAsync(requestDto);
             return StatusCode(Result.StatusCode, Result);
         }
+
+        [HttpPost("Refresh-Token")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto requestDto)
+        {
+            var Result = await _authService.RefreshTokenAsync(requestDto);
+            return StatusCode(Result.StatusCode, Result);
+        }
     }
 }
