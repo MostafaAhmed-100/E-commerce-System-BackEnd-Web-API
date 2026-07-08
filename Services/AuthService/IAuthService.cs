@@ -15,5 +15,7 @@ namespace WebApplication1.Services.Interface
         Task<ApiResponseDto<AuthResponseDto>> RegisterSellerAsync (RegisterSellerRequestDto registerSellerRequestDto);
 
         Task<ApiResponseDto<AuthResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto refreshTokenRequestDto);
+
+        Task<ApiResponseDto<string>> ConfirmEmailAsync(int userId, string code);
     }
 }

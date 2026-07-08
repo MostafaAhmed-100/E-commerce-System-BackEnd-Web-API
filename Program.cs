@@ -35,10 +35,12 @@ using WebApplication1.Services.AuthService;
 using WebApplication1.Services.CartService;
 using WebApplication1.Services.CategoryService;
 using WebApplication1.Services.CouponService;
+using WebApplication1.Services.EmailService;
 using WebApplication1.Services.Implementation;
 using WebApplication1.Services.Interface;
 using WebApplication1.Services.OrderService;
 using WebApplication1.Services.ProductService;
+using WebApplication1.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,7 +91,6 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(key)
     };
 });
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IAddressRepository, AddressRepository>();
 builder.Services.AddScoped<ISavedCardRepository, SavedCardRepository>();
@@ -100,7 +101,6 @@ builder.Services.AddScoped<ICouponRepository, CouponRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISellerRepository, SellerRepository>();
-builder.Services.AddAutoMapper(configAction => { }, AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -113,6 +113,10 @@ builder.Services.AddScoped<IOrderBackgroundJobs, OrderBackgroundJobs>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ISavedCardService, SavedCardService>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddAutoMapper(configAction => { }, AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 
 builder.Services.AddHttpClient();

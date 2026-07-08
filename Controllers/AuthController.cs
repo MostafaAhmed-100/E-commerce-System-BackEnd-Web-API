@@ -52,5 +52,12 @@ namespace WebApplication1.Controllers
             var Result = await _authService.RefreshTokenAsync(requestDto);
             return StatusCode(Result.StatusCode, Result);
         }
+
+        [HttpGet("Confirm-Email")]
+        public async Task<IActionResult> ConfirmEmail([FromQuery] int userId, [FromQuery] string code)
+        {
+            var Result = await _authService.ConfirmEmailAsync(userId, code);
+            return StatusCode(Result.StatusCode, Result);
+        }
     }
 }
