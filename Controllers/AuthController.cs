@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Security.Claims;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.Services.Interface;
 
@@ -57,6 +58,19 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> ConfirmEmail([FromQuery] int userId, [FromQuery] string code)
         {
             var Result = await _authService.ConfirmEmailAsync(userId, code);
+            return StatusCode(Result.StatusCode, Result);
+        }
+        [HttpPost("Forgot-Password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto requestDto)
+        {
+            var Result = await _authService.ForgotPasswordAsync(requestDto);
+            return StatusCode(Result.StatusCode, Result);
+        }
+
+        [HttpPost("Reset-Password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto requestDto)
+        {
+            var Result = await _authService.ResetPasswordAsync(requestDto);
             return StatusCode(Result.StatusCode, Result);
         }
     }

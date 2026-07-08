@@ -168,36 +168,7 @@ namespace WebApplication1.Services.AuthService
                 _logger.LogWarning("User creation failed for {Email}. Errors: {Errors}", registerRequestDto.Email, errors);
                 throw new BadRequestException($"Failed to create user: {errors}");
             }
-
-            var emailConfirmation = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var confirmationToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(emailConfirmation));
-            string link = $"https://localhost:7132/api/Auth/Confirm-Email?userId={user.Id}&code={confirmationToken}";
-
-            string emailBody = $@"
-            <!DOCTYPE html>
-            <html lang='ar' dir='rtl'>
-            <head>
-                <meta charset='UTF-8'>
-            </head>
-            <body style='font-family: Arial, sans-serif; text-align: center; padding: 30px; background-color: #f9f9f9;'>
-                <div style='background-color: #ffffff; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1);'>
-                    <h2 style='color: #333;'>أهلاً بيك! 🎉</h2>
-                    <p style='color: #555; font-size: 16px; line-height: 1.5;'>
-                        سعداء جداً بانضمامك لينا كـ Buyer. عشان تفعل حسابك وتكمل الخطوات، يرجى الضغط على الزرار اللي تحت:
-                    </p>
-                    <br>
-                    <a href='{link}' style='background-color: #512BD4; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>
-                        تأكيد الحساب
-                    </a>
-                    <br><br>
-                    <p style='color: #999; font-size: 12px;'>
-                        لو واجهت أي مشكلة، تقدر تتجاهل الرسالة دي.
-                    </p>
-                </div>
-            </body>
-            </html>";
-
-            await _emailService.SendEmailAsync(registerRequestDto.Email, "Confirm your email", emailBody);
+            await SentEmailConfirmation(user, registerRequestDto.Email);
 
             var buyer = new Buyer
             {
@@ -253,8 +224,8 @@ namespace WebApplication1.Services.AuthService
 
         public async Task<ApiResponseDto<AuthResponseDto>> RegisterSellerAsync(RegisterSellerRequestDto registerSellerRequestDto)
         {
-            var existingEmail = await _userManager.FindByEmailAsync(registerSellerRequestDto.SellerEmail);
-            if (existingEmail != null)
+            var User = await _userManager.FindByEmailAsync(registerSellerRequestDto.SellerEmail);
+            if (User != null)
             {
                 _logger.LogWarning("Seller Registration failed: Attempt to register with already existing email {Email}.", registerSellerRequestDto.SellerEmail);
                 throw new ConflictException("That Email Already Has An Account");
@@ -273,37 +244,7 @@ namespace WebApplication1.Services.AuthService
                 _logger.LogWarning("Seller creation failed for {Email}. Errors: {Errors}", registerSellerRequestDto.SellerEmail, errors);
                 throw new BadRequestException($"Failed to create user: {errors}");
             }
-
-            var emailConfirmation = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var confirmationToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(emailConfirmation));
-            string link = $"https://localhost:7132/api/Auth/Confirm-Email?userId={user.Id}&code={confirmationToken}";
-
-            string emailBody = $@"
-            <!DOCTYPE html>
-            <html lang='ar' dir='rtl'>
-            <head>
-                <meta charset='UTF-8'>
-            </head>
-            <body style='font-family: Arial, sans-serif; text-align: center; padding: 30px; background-color: #f9f9f9;'>
-                <div style='background-color: #ffffff; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1);'>
-                    <h2 style='color: #333;'>أهلاً بك يا هندسة! 🎉</h2>
-                    <p style='color: #555; font-size: 16px; line-height: 1.5;'>
-                        سعداء بانضمام متجرك إلينا كـ Seller. لتفعيل حسابك والبدء في رفع منتجاتك، يرجى الضغط على الزرار أدناه:
-                    </p>
-                    <br>
-                    <a href='{link}' style='background-color: #512BD4; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>
-                        تأكيد حساب المتجر
-                    </a>
-                    <br><br>
-                    <p style='color: #999; font-size: 12px;'>
-                        لو واجهت أي مشكلة، تقدر تتجاهل الرسالة دي.
-                    </p>
-                </div>
-            </body>
-            </html>";
-
-            await _emailService.SendEmailAsync(registerSellerRequestDto.SellerEmail, "Confirm your Seller email", emailBody);
-
+            await SentEmailConfirmation(user, registerSellerRequestDto.SellerEmail);
             if (!await _roleManager.RoleExistsAsync(AppRoles.Seller))
             {
                 await _roleManager.CreateAsync(new Role
@@ -368,8 +309,8 @@ namespace WebApplication1.Services.AuthService
                 throw new UnauthorizedException("The AdminSecretKey Is Wrong");
             }
 
-            var existingEmail = await _userManager.FindByEmailAsync(registerAdminRequestDto.AdminEmail);
-            if (existingEmail != null)
+            var User = await _userManager.FindByEmailAsync(registerAdminRequestDto.AdminEmail);
+            if (User != null)
             {
                 _logger.LogWarning("Admin Registration failed: Attempt to register with already existing email {Email}.", registerAdminRequestDto.AdminEmail);
                 throw new ConflictException("That Email Already Has An Account");
@@ -526,12 +467,135 @@ namespace WebApplication1.Services.AuthService
                 Message = "Your email has been confirmed successfully! You can now log in."
             };
         }
+        public async Task<ApiResponseDto<string>> ForgotPasswordAsync(ForgotPasswordRequestDto forgotPasswordRequestDto)
+        {
+            var User = await _userManager.FindByEmailAsync(forgotPasswordRequestDto.Email);
+            if (User == null)
+            {
+                _logger.LogWarning("try Forgot Password failed: Attempt to rest Password for a non existing email {Email}.", forgotPasswordRequestDto.Email);
+                throw new BadRequestException("That Email does not Have An Account");
+            }
+            await SentForgotPassword(User, forgotPasswordRequestDto.Email);
+            return new ApiResponseDto<string>
+            {
+                Data = null,
+                Message = "Email Has Been Sent"
+            };
 
+        }
+        public async Task<ApiResponseDto<string>> ResetPasswordAsync(ResetPasswordRequestDto requestDto)
+        {
+            var user = await _userManager.FindByEmailAsync(requestDto.Email);
+            if (user == null)
+            {
+                throw new BadRequestException("Invalid Request.");
+            }
+
+            var decodedTokenBytes = WebEncoders.Base64UrlDecode(requestDto.Token);
+            var decodedToken = Encoding.UTF8.GetString(decodedTokenBytes);
+
+            var result = await _userManager.ResetPasswordAsync(user, decodedToken, requestDto.Password);
+
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogWarning("Password reset failed for {Email}. Errors: {Errors}", requestDto.Email, errors);
+                throw new BadRequestException($"Failed to reset password: {errors}");
+            }
+
+            _logger.LogInformation("Password for {Email} has been reset successfully.", requestDto.Email);
+
+            return new ApiResponseDto<string>
+            {
+                Data = null,
+                Message = "Your password has been reset successfully. You can now log in."
+            };
+        }
+        #region Private Functions
         private string GenerateRefreshTokenString()
         {
             var randomNumber = new byte[32];
             RandomNumberGenerator.Fill(randomNumber);
             return Convert.ToBase64String(randomNumber);
         }
+        private async Task SentEmailConfirmation(User user , string Email)
+        {
+
+            var emailConfirmation = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var confirmationToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(emailConfirmation));
+            string link = $"https://localhost:7132/api/Auth/Confirm-Email?userId={user.Id}&code={confirmationToken}";
+
+            string emailBody = $@"
+            <!DOCTYPE html>
+            <html lang='ar' dir='rtl'>
+            <head>
+                <meta charset='UTF-8'>
+            </head>
+            <body style='font-family: Arial, sans-serif; text-align: center; padding: 30px; background-color: #f9f9f9;'>
+                <div style='background-color: #ffffff; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1);'>
+                    <h2 style='color: #333;'>أهلاً بك يا هندسة! 🎉</h2>
+                    <p style='color: #555; font-size: 16px; line-height: 1.5;'>
+                        سعداء بانضمام متجرك إلينا كـ Seller. لتفعيل حسابك والبدء في رفع منتجاتك، يرجى الضغط على الزرار أدناه:
+                    </p>
+                    <br>
+                    <a href='{link}' style='background-color: #512BD4; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>
+                        تأكيد حساب المتجر
+                    </a>
+                    <br><br>
+                    <p style='color: #999; font-size: 12px;'>
+                        لو واجهت أي مشكلة، تقدر تتجاهل الرسالة دي.
+                    </p>
+                </div>
+            </body>
+            </html>";
+
+            await _emailService.SendEmailAsync(Email, "Confirm your email", emailBody);
+            
+
+        }
+        private async Task SentForgotPassword(User user, string Email)
+        {
+
+            var PasswordReset = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var confirmationToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(PasswordReset));
+            string link = $"https://localhost:7132/reset-password?email={user.Email}&token={confirmationToken}";
+
+            string emailBody = $@"
+            <!DOCTYPE html>
+            <html lang='ar' dir='rtl'>
+            <head>
+                <meta charset='UTF-8'>
+            </head>
+            <body style='font-family: Arial, sans-serif; text-align: center; padding: 30px; background-color: #f9f9f9;'>
+    
+                <div style='background-color: #ffffff; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1);'>
+                    <h2 style='color: #333;'>إعادة تعيين كلمة المرور 🔒</h2>
+        
+                    <p style='color: #555; font-size: 16px; line-height: 1.5;'>
+                        لقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك. لتعيين كلمة مرور جديدة، يرجى الضغط على الزرار أدناه:
+                    </p>
+        
+                    <br>
+        
+                    <a href='{link}' style='background-color: #512BD4; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>
+                        تغيير كلمة المرور
+                    </a>
+        
+                    <br><br>
+        
+                    <p style='color: #999; font-size: 12px;'>
+                        إذا لم تكن أنت من طلب هذا التغيير، يمكنك تجاهل هذه الرسالة بأمان ولن يتم تغيير كلمة المرور.
+                    </p>
+                </div>
+
+            </body>
+            </html>";
+
+            await _emailService.SendEmailAsync(Email, "Confirm your Password", emailBody);
+
+
+        }
+
+        #endregion
     }
 }

@@ -17,5 +17,9 @@ namespace WebApplication1.Services.Interface
         Task<ApiResponseDto<AuthResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto refreshTokenRequestDto);
 
         Task<ApiResponseDto<string>> ConfirmEmailAsync(int userId, string code);
+
+        Task<ApiResponseDto<string>> ForgotPasswordAsync(ForgotPasswordRequestDto forgotPasswordRequestDto);
+        
+        Task <ApiResponseDto<string>> ResetPasswordAsync(ResetPasswordRequestDto resetPasswordRequestDto);
     }
 }
