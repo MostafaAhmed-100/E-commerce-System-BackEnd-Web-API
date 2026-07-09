@@ -10,7 +10,7 @@ using WebApplication1.Services.ProductService;
 namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
+    [ApiController, Authorize(Roles = AppRoles.Admin)]
     [EnableRateLimiting("BrowsingPolicy")]
     public class ProductController : ControllerBase
     {

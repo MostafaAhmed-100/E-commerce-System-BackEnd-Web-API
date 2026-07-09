@@ -1,15 +1,16 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using WebApplication1.Constants;
 using WebApplication1.DTOS.Request_DTOs;
+using WebApplication1.Entitys;
 using WebApplication1.Services;
 
 namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = AppRoles.Buyer)]
+    [Authorize(Roles = AppRoles.Buyer + AppRoles.Admin)]
     public class SavedCardController : ControllerBase
     {
         private readonly ISavedCardService _savedCardService;

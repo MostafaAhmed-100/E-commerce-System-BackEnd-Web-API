@@ -11,7 +11,7 @@ using WebApplication1.Services.CouponService;
 namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController, Authorize]
+    [ApiController, Authorize(Roles = AppRoles.Admin)]
     [EnableRateLimiting("UserActivityPolicy")]
     public class CouponController : ControllerBase
     {

@@ -10,7 +10,7 @@ using WebApplication1.Services.CartService;
 namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController , Authorize(Roles = AppRoles.Buyer)]
+    [ApiController , Authorize(Roles = AppRoles.Buyer + AppRoles.Admin)]
     [EnableRateLimiting("UserActivityPolicy")]
     public class CartController : ControllerBase
     {

@@ -11,7 +11,7 @@ namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize(Roles = AppRoles.Admin)]
     [EnableRateLimiting("CheckoutPolicy")]
     public class OrderController : ControllerBase
     {
