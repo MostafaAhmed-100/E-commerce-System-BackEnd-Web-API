@@ -26,6 +26,15 @@ namespace WebApplication1.Mappings
                 .ForMember(dest => dest.SellerNationalId, opt => opt.MapFrom(src => src.NationalId))
                 .ForMember(dest => dest.SellerBankName, opt => opt.MapFrom(src => src.BankName))
                 .ForMember(dest => dest.SellerBankAccountNumber, opt => opt.MapFrom(src => src.BankAccountNumber));
+
+            CreateMap<DTOS.Request_DTOs.UpdateBuyerProfileRequestDto, Entitys.User>()
+                .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.BuyerName))
+                .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.BuyerPhoneNumber));
+
+            CreateMap<DTOS.Request_DTOs.UpdateSellerProfileRequestDto, Entitys.Seller>()
+                .ForMember(dest => dest.StoreName, opt => opt.MapFrom(src => src.SellerStoreName))
+                .ForMember(dest => dest.BankName, opt => opt.MapFrom(src => src.SellerBankName))
+                .ForMember(dest => dest.BankAccountNumber, opt => opt.MapFrom(src => src.SellerBankAccountNumber));
         }
     }
 }

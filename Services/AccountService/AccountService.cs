@@ -121,7 +121,7 @@ namespace WebApplication1.Services.AccountService
             }
             else
             {
-                var sellerProfileDto =  _mapper.Map<SellerProfileResponseDto>(seller);
+                var sellerProfileDto = _mapper.Map<SellerProfileResponseDto>(seller);
                 _logger.LogInformation("Seller {SellerId} profile retrieved successfully.", sellerId);
                 return new ApiResponseDto<SellerProfileResponseDto>
                 {
@@ -130,5 +130,52 @@ namespace WebApplication1.Services.AccountService
                 };
             }
         }
+        public async Task<ApiResponseDto<string>> UpdateBuyerProfileAsync(int buyerId, UpdateBuyerProfileRequestDto updateBuyerProfile)
+        {
+            var buyer = await _buyerRepository.GetBuyerWithAddressesById(buyerId);
+            if (buyer == null)
+            {
+                _logger.LogWarning("Buyer {BuyerId} profile Not Found for update.", buyerId);
+                throw new NotFoundException("Buyer not found");
+            }
+
+            _mapper.Map(updateBuyerProfile, buyer.User);
+
+            await _buyerRepository.SaveChangesAsync();
+            _logger.LogInformation("Buyer {BuyerId} profile updated successfully.", buyerId);
+
+            return new ApiResponseDto<string>
+            {
+                Message = "Buyer profile updated successfully",
+                Data = null
+            };
+        }
+
+        public async Task<ApiResponseDto<string>> UpdateSellerProfileAsync(int sellerId, UpdateSellerProfileRequestDto updateSellerProfile)
+        {
+            var seller = await _sellerRepository.GetSellerWithUserById(sellerId);
+            if (seller == null)
+            {
+                _logger.LogWarning("Seller {SellerId} profile Not Found for update.", sellerId);
+                throw new NotFoundException("Seller not found");
+            }
+
+            _mapper.Map(updateSellerProfile, seller);
+
+            if (seller.User != null)
+            {
+                seller.User.PhoneNumber = updateSellerProfile.SellerPhoneNumber;
+            }
+
+            await _sellerRepository.SaveChangesAsync();
+            _logger.LogInformation("Seller {SellerId} profile updated successfully.", sellerId);
+
+            return new ApiResponseDto<string>
+            {
+                Message = "Seller profile updated successfully",
+                Data = null
+            };
+        }
+    }
     }
 }

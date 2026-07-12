@@ -9,7 +9,7 @@
 
 A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8 Web API**. The system supports three distinct roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, payment gateway integration, coupon discounts, rate limiting, background jobs, structured logging, clean data validation, centralized exception handling, secure account recovery, and full bilingual localization.
 
- 🚀 Tech Stack
+🚀 Tech Stack
 
 | Layer | Technology |
 | --- | --- |
@@ -61,7 +61,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 | Role | Capabilities |
 | --- | --- |
 | `Admin` | Manages categories, updates any order status. |
-| `Seller` | Creates/manages their own products, variants, and coupons. |
+| `Seller` | Creates/manages their own products, variants, and coupons. *(Requires National ID verification).* |
 | `Buyer` | Browses products, manages cart, places and cancels orders, manages saved payment cards. |
 
 ---
@@ -97,6 +97,7 @@ To change the response language, simply pass the `Accept-Language` header in you
 
 | Method | Endpoint | Auth | Description |
 | --- | --- | --- | --- |
+| GET | `/Profile` | ✅ Any | Retrieve tailored role-specific profile data (Buyer/Seller DTOs) |
 | POST | `/Change-Password` | ✅ Any | Securely change the current user's password |
 | DELETE | `/Delete-Account` | ✅ Any | Soft-delete own account |
 
@@ -285,6 +286,7 @@ dotnet run
 | Feature | Details |
 | --- | --- |
 | **Advanced Authentication** | Secure JWT issuance with long-lived Refresh Tokens, coupled with **strict email verification** required prior to login access. |
+| **Role-Based Profiles** | Dynamic profile retrieval tailored to user roles (Buyer/Seller) utilizing AutoMapper, strict DTO isolation, and KYC/National ID enforcement for sellers. |
 | **Account Management & Recovery** | Comprehensive operations including secure password modification, soft-deletion, and modular **Forgot/Reset Password** flows via tokenized emails. |
 | **Email Integration (MailKit)** | Automated, secure email dispatch for user registration confirmation and account recovery. |
 | **Structured Logging** | Comprehensive observability using Serilog (Request tracking, Info/Warning/Error trails). |
