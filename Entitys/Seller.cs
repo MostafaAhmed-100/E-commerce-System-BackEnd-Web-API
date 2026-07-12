@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.Identity.Client;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WebApplication1.Entitys
@@ -11,6 +12,7 @@ namespace WebApplication1.Entitys
         public required string BankName { get; set; }
         public string StoreName { get; set; }
         public string PhoneNumber { get; set; }
+        public string NationalId { get; set; }
         public  DateTime CreatedAt { get; set; } = DateTime.Now;
         public  bool IsDeleted { get; set; } = false;
         public required int UserId { get; set; }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
@@ -16,18 +17,21 @@ namespace WebApplication1.Services.AccountService
         private readonly IBuyerRepository _buyerRepository;
         private readonly ISellerRepository _sellerRepository;
         private readonly ILogger<AccountService> _logger;
+        private readonly IMapper _mapper;
         public AccountService
         (
             ILogger<AccountService> logger,
             UserManager<User> userManager,
             IBuyerRepository buyerRepository,
-            ISellerRepository sellerRepository
+            ISellerRepository sellerRepository,
+            IMapper mapper
         )
         {
             _logger = logger;
             _userManager = userManager;
             _buyerRepository = buyerRepository;
             _sellerRepository = sellerRepository;
+            _mapper = mapper;
         }
 
         public async Task<ApiResponseDto<string>> ChangePasswordAsync(ChangePasswordRequestDto changePasswordRequestDto, int userId)
@@ -86,6 +90,45 @@ namespace WebApplication1.Services.AccountService
                 Data = null,
                 Message = "User Deleted Succesfuly"
             };
+        }
+        public async Task<ApiResponseDto<BuyerProfileResponseDto>> GetBuyerProfileAsync(int buyerId)
+        {
+            var buyer = await _buyerRepository.GetBuyerWithAddressesById(buyerId);
+            if (buyer == null)
+            {
+                _logger.LogWarning("Buyer {BuyerId} profile Not Found ", buyerId);
+                throw new NotFoundException("Buyer not found");
+            }
+            else
+            {
+                var buyerProfileDto = _mapper.Map<BuyerProfileResponseDto>(buyer);
+                _logger.LogInformation("Buyer {BuyerId} profile retrieved successfully.", buyerId);
+                return new ApiResponseDto<BuyerProfileResponseDto>
+                {
+                    Data = buyerProfileDto,
+                    Message = "Buyer profile retrieved successfully"
+                };
+            }
+        }
+
+        public async Task<ApiResponseDto<SellerProfileResponseDto>> GetSellerProfileAsync(int sellerId)
+        {
+            var seller = await _sellerRepository.GetSellerWithUserById(sellerId);
+            if (seller == null)
+            {
+                _logger.LogWarning("Seller {SellerId} profile Not Found ", sellerId);
+                throw new NotFoundException("Seller not found");
+            }
+            else
+            {
+                var sellerProfileDto =  _mapper.Map<SellerProfileResponseDto>(seller);
+                _logger.LogInformation("Seller {SellerId} profile retrieved successfully.", sellerId);
+                return new ApiResponseDto<SellerProfileResponseDto>
+                {
+                    Data = sellerProfileDto,
+                    Message = "Seller profile retrieved successfully"
+                };
+            }
         }
     }
 }

@@ -37,6 +37,12 @@ namespace WebApplication1.Data.Configurations
                 .IsRequired()
                 .HasMaxLength(100);
 
+            builder.HasIndex(S => S.NationalId)
+                .IsUnique();
+            builder.Property(S => S.NationalId)
+                .IsRequired()
+                .HasMaxLength(14);
+
             builder.HasQueryFilter(S => S.IsDeleted == false);
         }
     }

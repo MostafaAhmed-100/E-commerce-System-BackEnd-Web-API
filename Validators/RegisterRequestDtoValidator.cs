@@ -23,6 +23,10 @@ namespace WebApplication1.Validators
             RuleFor(x => x.ConfirmPassword)
                 .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredConfirmPassword])
                 .Equal(x => x.Password).WithMessage(localizer[Constants.Resources.PasswordMismatch]);
+
+            RuleFor(x => x.PhoneNumber)
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredPhoneNumber])
+                .Matches(@"^\+?[1-9]\d{1,14}$").WithMessage(localizer[Constants.Resources.InvalidPhoneNumber]);
         }
     }
 }

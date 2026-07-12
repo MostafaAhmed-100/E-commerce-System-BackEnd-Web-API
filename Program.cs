@@ -223,13 +223,13 @@ app.Use(async (context, next) =>
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/V2/swagger.json", "My API V2");
-        c.DisplayRequestDuration();
-    });
 }
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/V2/swagger.json", "My API V2");
+    c.DisplayRequestDuration();
+});
 app.UseSerilogRequestLogging();
 app.UseHangfireDashboard("/hangfire");
 app.UseHttpsRedirection();

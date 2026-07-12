@@ -147,7 +147,7 @@
   <data name="InvalidParentCategoryId" xml:space="preserve">
     <value>Parent Category ID must be greater than 0.</value>
   </data>
-  <data name="InvalidPhone" xml:space="preserve">
+  <data name="InvalidPhoneNumber" xml:space="preserve">
     <value>Invalid phone number format.</value>
   </data>
   <data name="InvalidPrice" xml:space="preserve">
@@ -255,7 +255,7 @@
   <data name="RequiredPassword" xml:space="preserve">
     <value>Password is required.</value>
   </data>
-  <data name="RequiredPhone" xml:space="preserve">
+  <data name="RequiredPhoneNumber" xml:space="preserve">
     <value>Phone number is required.</value>
   </data>
   <data name="RequiredProductDesc" xml:space="preserve">

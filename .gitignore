@@ -5,3 +5,5 @@ obj/
 *.suo
 *.vscode/
 /appsettings.json
+/Properties/PublishProfiles
+/dotnet-tools.json

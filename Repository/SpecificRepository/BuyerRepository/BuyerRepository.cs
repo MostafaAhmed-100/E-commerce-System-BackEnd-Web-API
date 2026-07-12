@@ -18,5 +18,15 @@ namespace WebApplication1.Repository.SpecificRepository.BuyerRepository
                 .FirstOrDefaultAsync(I => I.UserId == UserId);
             return Buyer;
         }
+
+        public async Task<Buyer?> GetBuyerWithAddressesById(int BuyerId)
+        {
+            return await _AppDbcontext.Buyers
+                .Include(b => b.User)
+                    .ThenInclude(u => u.Addresses)
+                .AsSplitQuery()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.BuyerId == BuyerId);
+        }
     }
 }

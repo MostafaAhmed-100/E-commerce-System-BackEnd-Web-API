@@ -147,7 +147,7 @@
   <data name="InvalidParentCategoryId" xml:space="preserve">
     <value>معرف التصنيف الأب يجب أن يكون أكبر من صفر.</value>
   </data>
-  <data name="InvalidPhone" xml:space="preserve">
+  <data name="InvalidPhoneNumber" xml:space="preserve">
     <value>صيغة رقم الهاتف غير صحيحة.</value>
   </data>
   <data name="InvalidPrice" xml:space="preserve">
@@ -255,7 +255,7 @@
   <data name="RequiredPassword" xml:space="preserve">
     <value>كلمة المرور مطلوبة.</value>
   </data>
-  <data name="RequiredPhone" xml:space="preserve">
+  <data name="RequiredPhoneNumber" xml:space="preserve">
     <value>رقم الهاتف مطلوب.</value>
   </data>
   <data name="RequiredProductDesc" xml:space="preserve">

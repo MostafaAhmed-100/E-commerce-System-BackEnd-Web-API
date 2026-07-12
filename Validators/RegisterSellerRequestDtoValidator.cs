@@ -37,8 +37,8 @@ namespace WebApplication1.Validators
                 .MaximumLength(50).WithMessage(localizer[Constants.Resources.MaxTaxNumber]);
 
             RuleFor(P => P.PhoneNumber)
-                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredPhone])
-                .Matches(@"^\+?[0-9]{10,15}$").WithMessage(localizer[Constants.Resources.InvalidPhone]);
+                .NotEmpty().WithMessage(localizer[Constants.Resources.RequiredPhoneNumber])
+                .Matches(@"^\+?[0-9]{10,15}$").WithMessage(localizer[Constants.Resources.InvalidPhoneNumber]);
         }
     }
 }

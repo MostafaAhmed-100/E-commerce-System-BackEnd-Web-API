@@ -16,8 +16,6 @@
         public const string MaxStoreName = "MaxStoreName";
         public const string RequiredTaxNumber = "RequiredTaxNumber";
         public const string MaxTaxNumber = "MaxTaxNumber";
-        public const string RequiredPhone = "RequiredPhone";
-        public const string InvalidPhone = "InvalidPhone";
         public const string RequiredHomeAddress = "RequiredHomeAddress";
         public const string MaxHomeAddress = "MaxHomeAddress";
         public const string RequiredState = "RequiredState";
@@ -59,5 +57,7 @@
         public const string RequiredAdminSecretCode = "RequiredAdminSecretCode";
         public const string RequiredConfirmPassword = "RequiredConfirmPassword";
         public const string PasswordMismatch = "PasswordMismatch";
+        public const string RequiredPhoneNumber = "RequiredPhoneNumber";
+        public const string InvalidPhoneNumber = "InvalidPhoneNumber";
     }
 }

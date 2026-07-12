@@ -8,5 +8,8 @@ namespace WebApplication1.Services.AccountService
         Task<ApiResponseDto<string>> DeleteAccountAsync(int userId);
 
         Task<ApiResponseDto<string>> ChangePasswordAsync(ChangePasswordRequestDto changePasswordRequestDto, int userId);
+        Task<ApiResponseDto<BuyerProfileResponseDto>> GetBuyerProfileAsync(int buyerId);
+
+        Task<ApiResponseDto<SellerProfileResponseDto>> GetSellerProfileAsync(int sellerId);
     }
 }
