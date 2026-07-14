@@ -5,6 +5,6 @@ namespace WebApplication1.Repository.SpecificRepository.WishlistsRepository
 {
     public interface IWishlistsRepository :IGenericRepository<Wishlist>
     {
-        Task<IEnumerable<Wishlist>> GetBuyerWishlistsAsync(int buyerId)
+        Task<IEnumerable<Wishlist>> GetBuyerWishlistsAsync(int buyerId);
     }
 }

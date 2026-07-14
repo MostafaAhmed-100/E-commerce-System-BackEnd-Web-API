@@ -64,6 +64,14 @@ namespace WebApplication1.Controllers
             }
             return StatusCode(403, new { isSuccess = false, message = "Profile access is restricted to Buyers and Sellers." });
         }
+        [HttpGet("profile/national-id/{nationalId}")]
+        [Authorize(Roles = "Admin")] 
+        public async Task<IActionResult> GetSellerProfileByNationalId([FromRoute] string nationalId)
+        {
+            var response = await _accountService.GetSellerProfileByNationalIdAsync(nationalId);
+
+            return Ok(response);
+        }
 
         [Authorize(Roles = "Buyer")]
         [HttpPut("Buyer/Profile")]

@@ -15,9 +15,9 @@ namespace WebApplication1.Data.Configurations
                 .HasForeignKey(wi => wi.WishlistId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.HasOne(wi => wi.product)
+            builder.HasOne(wi => wi.productVariant)
                 .WithMany() 
-                .HasForeignKey(wi => wi.ProductId)
+                .HasForeignKey(wi => wi.productVariantId)
                 .OnDelete(DeleteBehavior.Restrict); 
         }
     }

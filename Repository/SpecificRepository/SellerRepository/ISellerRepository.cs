@@ -7,5 +7,6 @@ namespace WebApplication1.Repository.SpecificRepository.SellerRepository
     {
         Task<Seller?> GetSellerIdByUserId(int UserId);
         Task<Seller?> GetSellerWithUserById(int SellerId);
+        Task<Seller?> GetSellerByNationalId(string NationalId);
     }
 }

@@ -11,9 +11,19 @@ namespace WebApplication1.Repository.SpecificRepository.SellerRepository
         {
         }
 
+        public async Task<Seller?> GetSellerByNationalId(string NationalId)
+        {
+            var Seller = await _AppDbcontext.Sellers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(S => S.NationalId == NationalId);
+            return Seller;
+        }
+
         public async Task<Seller?> GetSellerIdByUserId(int UserId)
         {
-            var Seller = await _AppDbcontext.Sellers.FirstOrDefaultAsync(I => I.UserId == UserId);
+            var Seller = await _AppDbcontext.Sellers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(I => I.UserId == UserId);
             return Seller;
         }
 
@@ -25,5 +35,6 @@ namespace WebApplication1.Repository.SpecificRepository.SellerRepository
                 .FirstOrDefaultAsync(I => I.SellerId == SellerId);
             return seller;
         }
+
     }
 }

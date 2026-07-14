@@ -5,6 +5,7 @@ using WebApplication1.DTOS.Request_DTOs;
 using WebApplication1.DTOS.Response_DTOs;
 using WebApplication1.Entitys;
 using WebApplication1.Exceptions;
+using WebApplication1.Migrations;
 using WebApplication1.Repository.SpecificRepository.BuyerRepository;
 using WebApplication1.Repository.SpecificRepository.SellerRepository;
 
@@ -130,6 +131,27 @@ namespace WebApplication1.Services.AccountService
                 };
             }
         }
+
+        public async Task<ApiResponseDto<SellerProfileResponseDto>> GetSellerProfileByNationalIdAsync(string nationalId)
+        {
+            var seller = await _sellerRepository.GetSellerByNationalId(nationalId);
+            if (seller == null)
+            {
+                _logger.LogWarning("Seller Serch nationalId by {nationalId} profile Not Found ", nationalId);
+                throw new NotFoundException("Seller not found");
+            }
+            else
+            {
+                var sellerProfileDto = _mapper.Map<SellerProfileResponseDto>(seller);
+                _logger.LogInformation("Seller {nationalId} profile retrieved successfully.", nationalId);
+                return new ApiResponseDto<SellerProfileResponseDto>
+                {
+                    Data = sellerProfileDto,
+                    Message = "Seller profile retrieved successfully"
+                };
+            }
+        }
+
         public async Task<ApiResponseDto<string>> UpdateBuyerProfileAsync(int buyerId, UpdateBuyerProfileRequestDto updateBuyerProfile)
         {
             var buyer = await _buyerRepository.GetBuyerWithAddressesById(buyerId);
@@ -176,6 +198,5 @@ namespace WebApplication1.Services.AccountService
                 Data = null
             };
         }
-    }
     }
 }
