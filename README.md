@@ -1,3 +1,5 @@
+من عيني يا هندسة، ده الريدمي كامل متقفل وفيه كل التعديلات اللي عملناها من الألف للياء، جاهز تاخده "Copy" وتحطه في ملف `README.md` بتاعك على طول:
+
 # 🛒 E-Commerce REST API V2
 
 ![.NET Core](https://img.shields.io/badge/.NET%208.0-Purple?style=for-the-badge&logo=dotnet)
@@ -9,7 +11,7 @@
 
 A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8 Web API**. The system supports three distinct roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, payment gateway integration, coupon discounts, rate limiting, background jobs, structured logging, clean data validation, centralized exception handling, secure account recovery, and full bilingual localization.
 
-🚀 Tech Stack
+## 🚀 Tech Stack
 
 | Layer | Technology |
 | --- | --- |
@@ -62,7 +64,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 | --- | --- |
 | `Admin` | Manages categories, updates any order status. |
 | `Seller` | Creates/manages their own products, variants, and coupons. *(Requires National ID verification).* |
-| `Buyer` | Browses products, manages cart, places and cancels orders, manages saved payment cards. |
+| `Buyer` | Browses products, manages cart, manages wishlists, places and cancels orders, manages saved payment cards. |
 
 ---
 
@@ -98,8 +100,19 @@ To change the response language, simply pass the `Accept-Language` header in you
 | Method | Endpoint | Auth | Description |
 | --- | --- | --- | --- |
 | GET | `/Profile` | ✅ Any | Retrieve tailored role-specific profile data (Buyer/Seller DTOs) |
+| PUT | `/Profile` | ✅ Any | Update role-specific profile data with strict FluentValidation |
 | POST | `/Change-Password` | ✅ Any | Securely change the current user's password |
 | DELETE | `/Delete-Account` | ✅ Any | Soft-delete own account |
+
+### ❤️ Wishlist — `/api/Wishlist`
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/` | ✅ Buyer | Create a new customized wishlist |
+| GET | `/` | ✅ Buyer | Retrieve all wishlists for the authenticated buyer |
+| DELETE | `/{wishlistId}` | ✅ Buyer | Delete a specific wishlist and its items |
+| POST | `/{wishlistId}/toggle-item` | ✅ Buyer | Smartly toggle (add/remove) a product variant in the wishlist |
+| GET | `/{wishlistId}/items` | ✅ Buyer | Get paginated items (variants) inside a specific wishlist |
 
 ### 📍 Address — `/api/Address`
 
@@ -286,7 +299,7 @@ dotnet run
 | Feature | Details |
 | --- | --- |
 | **Advanced Authentication** | Secure JWT issuance with long-lived Refresh Tokens, coupled with **strict email verification** required prior to login access. |
-| **Role-Based Profiles** | Dynamic profile retrieval tailored to user roles (Buyer/Seller) utilizing AutoMapper, strict DTO isolation, and KYC/National ID enforcement for sellers. |
+| **Role-Based Profiles** | Dynamic profile retrieval and updating tailored to user roles (Buyer/Seller) utilizing AutoMapper, strict DTO isolation, and KYC/National ID enforcement for sellers. |
 | **Account Management & Recovery** | Comprehensive operations including secure password modification, soft-deletion, and modular **Forgot/Reset Password** flows via tokenized emails. |
 | **Email Integration (MailKit)** | Automated, secure email dispatch for user registration confirmation and account recovery. |
 | **Structured Logging** | Comprehensive observability using Serilog (Request tracking, Info/Warning/Error trails). |
@@ -298,6 +311,7 @@ dotnet run
 | **Soft Delete** | Users, products, and orders are never hard-deleted; global query filters hide them automatically. |
 | **Product Variants** | Each product has multiple SKU variants (size, color, price, stock). |
 | **Stock Management** | Reserved quantity tracking; stock is restored on cancellation or payment failure. |
+| **Wishlist System** | Comprehensive management allowing buyers to create multiple lists, smartly toggle product variants (add/remove with a single endpoint), and retrieve items via true DB pagination. |
 | **Coupon System** | Percentage or fixed-amount discounts with usage limits and date ranges. |
 | **True DB Pagination** | All list endpoints execute memory-optimized paging natively at the database level. |
 | **Global Query Filters** | Deleted records excluded at the EF Core level — no manual `.Where()` needed. |
