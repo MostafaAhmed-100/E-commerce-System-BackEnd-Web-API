@@ -1,5 +1,3 @@
-من عيني يا هندسة، ده الريدمي كامل متقفل وفيه كل التعديلات اللي عملناها من الألف للياء، جاهز تاخده "Copy" وتحطه في ملف `README.md` بتاعك على طول:
-
 # 🛒 E-Commerce REST API V2
 
 ![.NET Core](https://img.shields.io/badge/.NET%208.0-Purple?style=for-the-badge&logo=dotnet)
