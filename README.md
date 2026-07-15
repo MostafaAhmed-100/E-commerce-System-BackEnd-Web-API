@@ -1,13 +1,4 @@
-من عيني يا هندسة، ده الريدمي كامل متقفل وفيه كل التعديلات اللي عملناها من الألف للياء، جاهز تاخده "Copy" وتحطه في ملف `README.md` بتاعك على طول:
-
 # 🛒 E-Commerce REST API V2
-
-![.NET Core](https://img.shields.io/badge/.NET%208.0-Purple?style=for-the-badge&logo=dotnet)
-![SQL Server](https://img.shields.io/badge/SQL_Server-CC2927?style=for-the-badge&logo=microsoft-sql-server&logoColor=white)
-![Entity Framework Core](https://img.shields.io/badge/EF_Core-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
-![Serilog](https://img.shields.io/badge/Serilog-F46800?style=for-the-badge&logo=datalore&logoColor=white)
-![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
-![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)
 
 A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8 Web API**. The system supports three distinct roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, payment gateway integration, coupon discounts, rate limiting, background jobs, structured logging, clean data validation, centralized exception handling, secure account recovery, and full bilingual localization.
 
@@ -27,7 +18,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 | **Localization** | ASP.NET Core Request Localization (`.resx`) |
 | **Rate Limiting** | ASP.NET Core Built-in Rate Limiting |
 | **Background Jobs** | Hangfire + Hangfire.SqlServer |
-| **External Integration**| HttpClientFactory (Payment Gateway Webhooks) |
+| **External Integration** | HttpClientFactory (Payment Gateway Webhooks) |
 | **Error Handling** | Custom Exception Middleware + Action Filters |
 
 ## 🏗️ Project Structure
@@ -64,7 +55,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 | --- | --- |
 | `Admin` | Manages categories, updates any order status. |
 | `Seller` | Creates/manages their own products, variants, and coupons. *(Requires National ID verification).* |
-| `Buyer` | Browses products, manages cart, manages wishlists, places and cancels orders, manages saved payment cards. |
+| `Buyer` | Browses products, manages cart, manages wishlists, places and cancels orders, manages saved payment cards, and earns/redeems loyalty points. |
 
 ---
 
@@ -281,7 +272,7 @@ dotnet ef database update
 ## 🏃 Running the Project
 
 ```bash
-git clone [https://github.com/MostafaAhmed-100/E-Commerce-API-V2.git](https://github.com/MostafaAhmed-100/E-Commerce-API-V2.git)
+git clone https://github.com/MostafaAhmed-100/E-Commerce-API-V2.git
 cd E-Commerce-API-V2
 dotnet restore
 dotnet ef database update
@@ -318,6 +309,7 @@ dotnet run
 | **Rate Limiting** | Three policies protecting auth, checkout, and browsing endpoints. |
 | **Auto-Cancel Jobs** | Hangfire delayed jobs cancel unpaid orders automatically after a configurable timeout. |
 | **Response Time Header** | Every response includes `X-Response-Time` for performance monitoring. |
+| **Loyalty Points System** | Full ledger implementation. Buyers earn points upon successful payment completion, spend points as a discount at checkout (subject to threshold verification), and have points accurately refunded or revoked during cancellation or payment failures. |
 
 ---
 
