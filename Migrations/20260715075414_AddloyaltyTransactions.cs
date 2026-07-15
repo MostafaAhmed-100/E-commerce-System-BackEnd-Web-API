@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace WebApplication1.Migrations
 {
     /// <inheritdoc />
-    public partial class AddWishlistAndNationalIdInSeller : Migration
+    public partial class AddloyaltyTransactions : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,6 +18,35 @@ namespace WebApplication1.Migrations
                 maxLength: 14,
                 nullable: false,
                 defaultValue: "");
+
+            migrationBuilder.CreateTable(
+                name: "LoyaltyTransactions",
+                columns: table => new
+                {
+                    LoyaltyTransactionId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BuyerId = table.Column<int>(type: "int", nullable: false),
+                    OrderId = table.Column<int>(type: "int", nullable: true),
+                    Points = table.Column<int>(type: "int", nullable: false),
+                    TransactionType = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LoyaltyTransactions", x => x.LoyaltyTransactionId);
+                    table.ForeignKey(
+                        name: "FK_LoyaltyTransactions_Buyers_BuyerId",
+                        column: x => x.BuyerId,
+                        principalTable: "Buyers",
+                        principalColumn: "BuyerId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_LoyaltyTransactions_Orders_OrderId",
+                        column: x => x.OrderId,
+                        principalTable: "Orders",
+                        principalColumn: "OrderId",
+                        onDelete: ReferentialAction.SetNull);
+                });
 
             migrationBuilder.CreateTable(
                 name: "wishlists",
@@ -68,10 +97,14 @@ namespace WebApplication1.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Sellers_NationalId",
-                table: "Sellers",
-                column: "NationalId",
-                unique: true);
+                name: "IX_LoyaltyTransactions_BuyerId",
+                table: "LoyaltyTransactions",
+                column: "BuyerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LoyaltyTransactions_OrderId",
+                table: "LoyaltyTransactions",
+                column: "OrderId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_wishlistItems_productVariantId",
@@ -93,14 +126,13 @@ namespace WebApplication1.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "LoyaltyTransactions");
+
+            migrationBuilder.DropTable(
                 name: "wishlistItems");
 
             migrationBuilder.DropTable(
                 name: "wishlists");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Sellers_NationalId",
-                table: "Sellers");
 
             migrationBuilder.DropColumn(
                 name: "NationalId",

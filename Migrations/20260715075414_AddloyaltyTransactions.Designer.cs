@@ -12,8 +12,8 @@ using WebApplication1.Data;
 namespace WebApplication1.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260714130820_AddWishlistAndNationalIdInSeller")]
-    partial class AddWishlistAndNationalIdInSeller
+    [Migration("20260715075414_AddloyaltyTransactions")]
+    partial class AddloyaltyTransactions
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -385,6 +385,42 @@ namespace WebApplication1.Migrations
                         });
                 });
 
+            modelBuilder.Entity("WebApplication1.Entitys.LoyaltyTransaction", b =>
+                {
+                    b.Property<int>("LoyaltyTransactionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LoyaltyTransactionId"));
+
+                    b.Property<int>("BuyerId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TransactionType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("LoyaltyTransactionId");
+
+                    b.HasIndex("BuyerId");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("LoyaltyTransactions", (string)null);
+                });
+
             modelBuilder.Entity("WebApplication1.Entitys.Order", b =>
                 {
                     b.Property<int>("OrderId")
@@ -699,9 +735,6 @@ namespace WebApplication1.Migrations
                     b.HasIndex("BankAccountNumber")
                         .IsUnique();
 
-                    b.HasIndex("NationalId")
-                        .IsUnique();
-
                     b.HasIndex("PhoneNumber")
                         .IsUnique();
 
@@ -983,6 +1016,24 @@ namespace WebApplication1.Migrations
                     b.Navigation("Seller");
                 });
 
+            modelBuilder.Entity("WebApplication1.Entitys.LoyaltyTransaction", b =>
+                {
+                    b.HasOne("WebApplication1.Entitys.Buyer", "Buyer")
+                        .WithMany("loyaltyTransactions")
+                        .HasForeignKey("BuyerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WebApplication1.Entitys.Order", "Order")
+                        .WithMany("loyaltyTransactions")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Buyer");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("WebApplication1.Entitys.Order", b =>
                 {
                     b.HasOne("WebApplication1.Entitys.Address", "Address")
@@ -1116,6 +1167,8 @@ namespace WebApplication1.Migrations
             modelBuilder.Entity("WebApplication1.Entitys.Buyer", b =>
                 {
                     b.Navigation("Orders");
+
+                    b.Navigation("loyaltyTransactions");
                 });
 
             modelBuilder.Entity("WebApplication1.Entitys.Category", b =>
@@ -1128,6 +1181,8 @@ namespace WebApplication1.Migrations
             modelBuilder.Entity("WebApplication1.Entitys.Order", b =>
                 {
                     b.Navigation("OrderItems");
+
+                    b.Navigation("loyaltyTransactions");
                 });
 
             modelBuilder.Entity("WebApplication1.Entitys.Seller", b =>

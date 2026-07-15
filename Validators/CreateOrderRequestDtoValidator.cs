@@ -13,6 +13,7 @@ namespace WebApplication1.Validators
 
             RuleFor(x => x.CouponCode)
                 .MaximumLength(50).WithMessage(localizer[Constants.Resources.MaxCouponCode]);
+            
         }
     }
 }

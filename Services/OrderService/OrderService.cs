@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Hangfire;
+using Microsoft.Extensions.Logging;
 using WebApplication1.BackgroundJobs.OrderJobs;
 using WebApplication1.Constants;
 using WebApplication1.DTOS.Request_DTOs;
@@ -14,8 +15,8 @@ using WebApplication1.Repository.SpecificRepository.AddressRepository;
 using WebApplication1.Repository.SpecificRepository.BuyerRepository;
 using WebApplication1.Repository.SpecificRepository.CartRepository;
 using WebApplication1.Repository.SpecificRepository.CouponRepository;
+using WebApplication1.Repository.SpecificRepository.LoyaltyTransactionRepository;
 using WebApplication1.Repository.SpecificRepository.OrderRepository;
-using Microsoft.Extensions.Logging;
 
 namespace WebApplication1.Services.OrderService
 {
@@ -28,6 +29,7 @@ namespace WebApplication1.Services.OrderService
         private readonly IBuyerRepository _buyerRepository;
         private readonly IPaymentService _paymentService;
         private readonly ISavedCardService _savedCardService;
+        private readonly ILoyaltyTransactionRepository _loyaltyTransactionRepository;
         private readonly ILogger<OrderService> _logger;
         private readonly IMapper _mapper;
 
@@ -40,6 +42,7 @@ namespace WebApplication1.Services.OrderService
             IBuyerRepository buyerRepository,
             ISavedCardService savedCardService,
             IPaymentService paymentService,
+            ILoyaltyTransactionRepository loyaltyTransactionRepository,
             IMapper mapper)
         {
             _logger = logger;
@@ -50,6 +53,7 @@ namespace WebApplication1.Services.OrderService
             _addressRepository = addressRepository;
             _couponRepository = couponRepository;
             _paymentService = paymentService;
+            _loyaltyTransactionRepository = loyaltyTransactionRepository;
             _mapper = mapper;
         }
 
@@ -67,6 +71,19 @@ namespace WebApplication1.Services.OrderService
             {
                 _logger.LogWarning("Security Warning: User {UserId} attempted to create an order for unauthorized BuyerId {AttemptedBuyerId}.", userId, buyerId);
                 throw new UnauthorizedException("The provided Buyer ID does not belong to the authenticated user");
+            }
+
+            bool isRedeemingPoints = createOrderRequestDto.UseLoyaltyPoints == true && createOrderRequestDto.PointsToRedeem != null;
+
+            if (isRedeemingPoints)
+            {
+                var points = await _loyaltyTransactionRepository.GetTotalPointsFromLedgerByBuyerIdAsync(buyerId);
+                if (points < createOrderRequestDto.PointsToRedeem)
+                {
+                    _logger.LogWarning("The User {UserId} attempted to use points {PointsToRedeem} he doesn't have, he has {Points}",
+                        userId, createOrderRequestDto.PointsToRedeem, points);
+                    throw new BadRequestException($"You cant redeem {createOrderRequestDto.PointsToRedeem} points, you only have {points}");
+                }
             }
 
             var address = await _addressRepository.GetByIdAsync(createOrderRequestDto.AddressId);
@@ -125,6 +142,17 @@ namespace WebApplication1.Services.OrderService
 
             decimal finalTotal = Math.Max(0, subtotal - discountAmount);
 
+            if (isRedeemingPoints)
+            {
+                if (createOrderRequestDto.PointsToRedeem / 100 < 100)
+                {
+                    _logger.LogWarning("The User {UserId} attempted to redeem points that equals less than 100 EGP: points {PointsToRedeem} equals {Pounds} EGP",
+                        userId, createOrderRequestDto.PointsToRedeem, (createOrderRequestDto.PointsToRedeem / 100));
+                    throw new BadRequestException("Your points to redeem equals less than 100 EGP.");
+                }
+                finalTotal = UsePoints(finalTotal, (int)createOrderRequestDto.PointsToRedeem);
+            }
+
             var order = new Order
             {
                 BuyerId = buyer.BuyerId,
@@ -149,7 +177,6 @@ namespace WebApplication1.Services.OrderService
             foreach (var item in Cart.Items)
             {
                 item.ProductVariant.QuantityInStock -= item.Quantity;
-
                 if (item.ProductVariant.ReservedQuantity >= item.Quantity)
                 {
                     item.ProductVariant.ReservedQuantity -= item.Quantity;
@@ -163,8 +190,24 @@ namespace WebApplication1.Services.OrderService
             }
 
             _cartRepository.Delete(Cart);
+            await _orderRepository.SaveChangesAsync(); 
 
-            await _orderRepository.SaveChangesAsync();
+            if (isRedeemingPoints)
+            {
+                buyer.LoyaltyPoints = (buyer.LoyaltyPoints ?? 0) - (int)createOrderRequestDto.PointsToRedeem;
+                _buyerRepository.Update(buyer);
+
+                var loyaltyTransaction = new LoyaltyTransaction
+                {
+                    CreatedAt = DateTime.UtcNow,
+                    BuyerId = buyerId,
+                    OrderId = order.OrderId, 
+                    TransactionType = TransactionType.Redeemed,
+                    Points = -(int)createOrderRequestDto.PointsToRedeem, 
+                };
+                await _loyaltyTransactionRepository.AddAsync(loyaltyTransaction);
+                await _loyaltyTransactionRepository.SaveChangesAsync();
+            }
 
             _logger.LogInformation("Order {OrderId} successfully created for Buyer {BuyerId} (User {UserId}) with TotalAmount {TotalAmount}.", order.OrderId, buyer.BuyerId, userId, finalTotal);
 
@@ -185,8 +228,7 @@ namespace WebApplication1.Services.OrderService
             if (InitializePaymentResponse.IsSuccess == false)
             {
                 _logger.LogWarning("Payment initialization failed for Order {OrderId} belonging to User {UserId}.", order.OrderId, userId);
-                throw new BadRequestException("الرابط الخارجي غير صحيح أو السيرفر غير متاح" +
-                    "The payment has been decliend Order Status is Pending For 24 hours");
+                throw new BadRequestException("الرابط الخارجي غير صحيح أو السيرفر غير متاح. The payment has been declined. Order Status is Pending.");
             }
 
             _logger.LogInformation("Payment successfully initialized for Order {OrderId}. Checkout URL generated.", order.OrderId);
@@ -195,7 +237,6 @@ namespace WebApplication1.Services.OrderService
             orderResponse.CheckoutUrl = InitializePaymentResponse.CheckoutUrl;
             return new ApiResponseDto<OrderResponseDto>
             {
-
                 Message = "Order created successfully.",
                 Data = orderResponse
             };
@@ -308,7 +349,46 @@ namespace WebApplication1.Services.OrderService
                 throw new BadRequestException($"Order cannot be cancelled because it is already {order.Status}.");
             }
 
+            var oldStatus = order.Status;
             order.Status = OrderStatus.cancelled;
+
+            var redeemedTransaction = await _loyaltyTransactionRepository.GetTransactionByOrderIdAndTypeAsync(orderId, TransactionType.Redeemed);
+            if (redeemedTransaction != null)
+            {
+                int pointsToRefund = Math.Abs(redeemedTransaction.Points);
+                buyer.LoyaltyPoints = (buyer.LoyaltyPoints ?? 0) + pointsToRefund;
+                _buyerRepository.Update(buyer);
+
+                var refundTransaction = new LoyaltyTransaction
+                {
+                    CreatedAt = DateTime.UtcNow,
+                    BuyerId = buyer.BuyerId,
+                    OrderId = order.OrderId,
+                    TransactionType = TransactionType.Refunded,
+                    Points = pointsToRefund, 
+                };
+                await _loyaltyTransactionRepository.AddAsync(refundTransaction);
+            }
+
+            if (oldStatus == OrderStatus.successful)
+            {
+                var earnedTransaction = await _loyaltyTransactionRepository.GetTransactionByOrderIdAndTypeAsync(orderId, TransactionType.Earned);
+                if (earnedTransaction != null)
+                {
+                    buyer.LoyaltyPoints = Math.Max(0, (buyer.LoyaltyPoints ?? 0) - earnedTransaction.Points);
+                    _buyerRepository.Update(buyer);
+
+                    var revokeTransaction = new LoyaltyTransaction
+                    {
+                        CreatedAt = DateTime.UtcNow,
+                        BuyerId = buyer.BuyerId,
+                        OrderId = order.OrderId,
+                        TransactionType = TransactionType.Revoked,
+                        Points = -earnedTransaction.Points, 
+                    };
+                    await _loyaltyTransactionRepository.AddAsync(revokeTransaction);
+                }
+            }
 
             foreach (var item in order.OrderItems)
             {
@@ -331,7 +411,7 @@ namespace WebApplication1.Services.OrderService
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
 
-            _logger.LogInformation("Order {OrderId} was successfully cancelled by User {UserId}. Stock and coupon limits have been restored.", orderId, userId);
+            _logger.LogInformation("Order {OrderId} was successfully cancelled by User {UserId}. Stock, coupons, and loyalty points have been updated.", orderId, userId);
 
             return new ApiResponseDto<string>
             {
@@ -360,16 +440,58 @@ namespace WebApplication1.Services.OrderService
                 throw new BadRequestException("This order has already been payed");
             }
 
+            var buyer = await _buyerRepository.GetByIdAsync(order.BuyerId);
+            if (buyer == null)
+            {
+                throw new NotFoundException("Buyer profile not found.");
+            }
+
             if (isSuccess)
             {
                 order.Status = OrderStatus.successful;
                 _logger.LogInformation("Payment Callback: Payment SUCCESSFUL for Order {OrderId}. Status updated to successful.", orderId);
+
+                var finalTotal = order.TotalAmount;
+                int loyaltyPointsEarned = (int)finalTotal / 1000;
+
+                if (loyaltyPointsEarned > 0)
+                {
+                    buyer.LoyaltyPoints = (buyer.LoyaltyPoints ?? 0) + loyaltyPointsEarned;
+                    _buyerRepository.Update(buyer);
+
+                    var loyaltyTransaction = new LoyaltyTransaction
+                    {
+                        CreatedAt = DateTime.UtcNow,
+                        BuyerId = buyer.BuyerId,
+                        OrderId = order.OrderId,
+                        TransactionType = TransactionType.Earned,
+                        Points = loyaltyPointsEarned,
+                    };
+                    await _loyaltyTransactionRepository.AddAsync(loyaltyTransaction);
+                }
             }
             else
             {
                 order.Status = OrderStatus.cancelled;
+                _logger.LogInformation("Payment Callback: Payment FAILED for Order {OrderId}. Order cancelled, restoring stock and refunding points.", orderId);
 
-                _logger.LogInformation("Payment Callback: Payment FAILED for Order {OrderId}. Order cancelled, restoring stock.", orderId);
+                var redeemedTransaction = await _loyaltyTransactionRepository.GetTransactionByOrderIdAndTypeAsync(orderId, TransactionType.Redeemed);
+                if (redeemedTransaction != null)
+                {
+                    int pointsToRefund = Math.Abs(redeemedTransaction.Points);
+                    buyer.LoyaltyPoints = (buyer.LoyaltyPoints ?? 0) + pointsToRefund;
+                    _buyerRepository.Update(buyer);
+
+                    var refundTransaction = new LoyaltyTransaction
+                    {
+                        CreatedAt = DateTime.UtcNow,
+                        BuyerId = buyer.BuyerId,
+                        OrderId = order.OrderId,
+                        TransactionType = TransactionType.Refunded,
+                        Points = pointsToRefund,
+                    };
+                    await _loyaltyTransactionRepository.AddAsync(refundTransaction);
+                }
 
                 foreach (var item in order.OrderItems)
                 {
@@ -398,6 +520,13 @@ namespace WebApplication1.Services.OrderService
                 Message = isSuccess ? "Payment successful. Order is processing." : "Payment failed. Order cancelled and stock restored.",
                 Data = null
             };
+        }
+
+        private decimal UsePoints(decimal finaltotal, int pointsToUse)
+        {
+            int pointsdiscount = pointsToUse / 100;
+            finaltotal = finaltotal - pointsdiscount;
+            return finaltotal;
         }
     }
 }

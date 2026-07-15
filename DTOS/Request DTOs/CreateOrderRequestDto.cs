@@ -9,5 +9,9 @@ namespace WebApplication1.DTOS.Request_DTOs
         public string? CouponCode { get; set; }
         
         public string CurrencyCode { get; set; }
+
+        public bool UseLoyaltyPoints { get; set; } = false;
+
+        public int? PointsToRedeem { get; set; }
     }
 }

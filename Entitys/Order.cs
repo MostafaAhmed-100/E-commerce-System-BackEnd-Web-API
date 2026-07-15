@@ -20,6 +20,7 @@ namespace WebApplication1.Entitys
         public Buyer Buyer { get; set; } = null!;
         public Address? Address { get; set; } = null;
         public Coupon? Coupon { get; set; } = null;
+        public ICollection<LoyaltyTransaction> loyaltyTransactions { get; set; }
 
     }
 }

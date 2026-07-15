@@ -24,6 +24,7 @@ namespace WebApplication1.Data
         public DbSet<Coupon> Coupons { get; set; }
         public DbSet<Wishlist> wishlists { get; set; }
         public DbSet<WishlistItem> wishlistItems { get; set; }
+        public DbSet<LoyaltyTransaction> loyaltyTransactions { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

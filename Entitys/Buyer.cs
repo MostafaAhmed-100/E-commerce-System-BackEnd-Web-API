@@ -11,5 +11,7 @@
         public required User User { get; set; }
         public ICollection<Order> Orders { get; set; } = new List<Order>();
 
+        public ICollection<LoyaltyTransaction> loyaltyTransactions { get; set; }
+
     }
 }
