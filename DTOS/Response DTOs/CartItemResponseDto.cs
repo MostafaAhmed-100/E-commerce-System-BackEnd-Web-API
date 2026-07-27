@@ -2,14 +2,14 @@
 {
     public class CartItemResponseDto
     {
-        public required int VariantId { get; set; }
-        public required string ProductName { get; set; }
-        public required int Quantity { get; set; }
-        public required string Color { get; set; }
-
-        public required string Size { get; set; }
-        public required decimal Price { get; set; }
-        public required decimal Discount { get; set; }
-        public required decimal SubTotal { get; set; }
+        public int VariantId { get; set; }
+        public string ProductName { get; set; }
+        public int Quantity { get; set; }
+        public string Color { get; set; }
+               
+        public string Size { get; set; }
+        public decimal Price { get; set; }
+        public decimal Discount { get; set; }
+        public decimal SubTotal { get; set; }
     }
 }

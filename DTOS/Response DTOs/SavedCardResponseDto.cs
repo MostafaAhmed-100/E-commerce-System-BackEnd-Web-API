@@ -3,7 +3,7 @@
     public class SavedCardResponseDto
     {
         public int CardId { get; set; }
-        public required string CardBrand { get; set; }
-        public required string MaskedNumber { get; set; }
+        public string CardBrand { get; set; }
+        public string MaskedNumber { get; set; }
     }
 }

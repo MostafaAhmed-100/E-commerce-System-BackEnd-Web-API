@@ -43,7 +43,8 @@ namespace WebApplication1.Services.OrderService
             ISavedCardService savedCardService,
             IPaymentService paymentService,
             ILoyaltyTransactionRepository loyaltyTransactionRepository,
-            IMapper mapper)
+            IMapper mapper,
+            ILoyaltyTransactionRepository @object)
         {
             _logger = logger;
             _savedCardService = savedCardService;

@@ -5,7 +5,7 @@ namespace WebApplication1.DTOS.Request_DTOs
     public class CreateCouponRequestDto
     {
         public required string CouponCode { get; set; }
-        public required DiscountType DiscountType { get; set; }
+        public DiscountType DiscountType { get; set; }
         public required decimal DiscountValue { get; set; }
         public required DateTime StartDate { get; set; }
         public required DateTime EndDate { get; set; }

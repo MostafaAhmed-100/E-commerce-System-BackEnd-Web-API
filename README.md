@@ -10,7 +10,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 | **ORM** | Entity Framework Core |
 | **Database** | SQL Server |
 | **Auth** | ASP.NET Core Identity + JWT Bearer + Refresh Tokens |
-| **Architecture** | Repository Pattern + Service Layer |
+| **Architecture** | Clean Architecture principles, Repository Pattern + Service Layer |
 | **Object Mapping** | AutoMapper |
 | **Input Validation** | Fluent Validation + C# 11 `required` modifiers |
 | **Logging** | Serilog (File & Console Sinks, Request Tracking) |
@@ -19,7 +19,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 | **Rate Limiting** | ASP.NET Core Built-in Rate Limiting |
 | **Background Jobs** | Hangfire + Hangfire.SqlServer |
 | **External Integration** | HttpClientFactory (Payment Gateway Webhooks) |
-| **Error Handling** | Custom Exception Middleware + Action Filters |
+| **Testing** | NUnit & Moq (Comprehensive Unit Testing for Business Logic) |
 
 ## 🏗️ Project Structure
 
@@ -41,6 +41,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 ├── Resources/                 # Localization files (English & Arabic)
 ├── Constants/                 # OrderStatus constants and other shared literals
 ├── BackgroundJobs/            # Hangfire job definitions
+├── Tests/                     # Unit Tests using NUnit and Moq
 └── Data/
     ├── Configurations/        # EF Core Fluent API entity configurations
     └── AppDbContext           # Context and migrations
@@ -105,37 +106,7 @@ To change the response language, simply pass the `Accept-Language` header in you
 | POST | `/{wishlistId}/toggle-item` | ✅ Buyer | Smartly toggle (add/remove) a product variant in the wishlist |
 | GET | `/{wishlistId}/items` | ✅ Buyer | Get paginated items (variants) inside a specific wishlist |
 
-### 📍 Address — `/api/Address`
-
-*(... All Address Endpoints ...)*
-
-### 🛍️ Product — `/api/Product`
-
-*(... All Product Endpoints ...)*
-
-### 🗂️ Category — `/api/Category`
-
-*(... All Category Endpoints ...)*
-
-### 🛒 Cart — `/api/Cart`
-
-*(... All Cart Endpoints ...)*
-
-### 💳 Saved Cards — `/api/SavedCard`
-
-*(... All Saved Cards Endpoints ...)*
-
-### 📋 Order — `/api/Order`
-
-*(... All Order Endpoints ...)*
-
-### 💸 Payment Gateway — `/api/Payment`
-
-*(... All Payment Gateway Endpoints ...)*
-
-### 🎟️ Coupon — `/api/Coupon`
-
-*(... All Coupon Endpoints ...)*
+*(Note: Other modules including Address, Product, Category, Cart, SavedCard, Order, Payment, and Coupon follow a similarly structured RESTful design).*
 
 ---
 
@@ -185,6 +156,17 @@ The project architecture has undergone significant data-layer refactoring to sec
 
 ---
 
+## 🧪 Unit Testing & Quality Assurance
+
+To ensure the highest level of reliability and prevent regressions, the core business logic has been rigorously tested:
+
+* **Frameworks Used:** `NUnit` as the testing framework and `Moq` for isolating dependencies.
+* **Test Coverage:** Comprehensive testing of the Service Layer (e.g., `OrderService`, `AuthService`, `ProductService`, `CartService`, etc.).
+* **Boundary & Exception Testing:** Every critical path is tested, including complex business logic (e.g., Stock reservation, Loyalty Points calculations, Invalid/Expired Coupons, and Unauthorized modifications).
+* **Mocked Integrations:** External services, Repositories, and Identity Managers (`UserManager`/`RoleManager`) are fully mocked to ensure tests run fast and deterministically without needing a live database or SMTP server.
+
+---
+
 ## 🛡️ Clean Validation, Logging & Global Error Handling
 
 The project implements a robust, centralized error-handling and observability architecture:
@@ -214,18 +196,6 @@ Hangfire is integrated with SQL Server persistence and a dashboard for job monit
 **Automated Unpaid Order Cancellation:** When a Buyer places an order, a Hangfire **Delayed Job** is scheduled. If the order is still in `Pending` / unpaid status after the configured timeout, the job automatically cancels it and restores reserved stock — no manual intervention needed.
 
 Hangfire Dashboard is available at: `/hangfire` *(Admin only in production)*
-
----
-
-## 📋 Order Status Pipeline
-
-`OrderStatus` values are defined as constants (not raw strings) to prevent typos and enable IDE support:
-
-```text
-Pending → Processing → Shipped → Delivered
-↘ Cancelled (by Buyer, Payment Failure, or auto-cancelled by background job)
-
-```
 
 ---
 
@@ -272,7 +242,7 @@ dotnet ef database update
 ## 🏃 Running the Project
 
 ```bash
-git clone https://github.com/MostafaAhmed-100/E-Commerce-API-V2.git
+git clone [https://github.com/MostafaAhmed-100/E-Commerce-API-V2.git](https://github.com/MostafaAhmed-100/E-Commerce-API-V2.git)
 cd E-Commerce-API-V2
 dotnet restore
 dotnet ef database update
@@ -291,25 +261,25 @@ dotnet run
 | --- | --- |
 | **Advanced Authentication** | Secure JWT issuance with long-lived Refresh Tokens, coupled with **strict email verification** required prior to login access. |
 | **Role-Based Profiles** | Dynamic profile retrieval and updating tailored to user roles (Buyer/Seller) utilizing AutoMapper, strict DTO isolation, and KYC/National ID enforcement for sellers. |
-| **Account Management & Recovery** | Comprehensive operations including secure password modification, soft-deletion, and modular **Forgot/Reset Password** flows via tokenized emails. |
-| **Email Integration (MailKit)** | Automated, secure email dispatch for user registration confirmation and account recovery. |
+| **Account Management** | Comprehensive operations including secure password modification, soft-deletion, and modular **Forgot/Reset Password** flows via tokenized emails. |
+| **Unit Testing** | High test coverage using **NUnit & Moq** to validate business rules and edge cases safely. |
+| **Email Integration** | Automated, secure email dispatch for user registration confirmation and account recovery. |
 | **Structured Logging** | Comprehensive observability using Serilog (Request tracking, Info/Warning/Error trails). |
-| **Payment Gateway Integration** | Complete checkout flow with third-party webhooks, tokenized saved cards, and asynchronous payment verification. |
-| **Clean Database Architecture** | Decoupled EF Core configurations using `IEntityTypeConfiguration` (Fluent API) instead of cluttered Data Annotations. |
-| **Clean Validation** | Fluent Validation rules separated from DTOs, enforced via a global Action Filter, backed by C# 11 `required` modifiers. |
+| **Payment Gateway** | Complete checkout flow with third-party webhooks, tokenized saved cards, and asynchronous payment verification. |
+| **Clean DB Architecture** | Decoupled EF Core configurations using `IEntityTypeConfiguration` (Fluent API). |
+| **Clean Validation** | Fluent Validation rules separated from DTOs, enforced via a global Action Filter. |
 | **Centralized Error Handling** | Custom middleware intercepts exceptions, enriches logs, and standardizes API responses. |
 | **Bilingual Support** | Full English and Arabic response localization based on the `Accept-Language` header. |
 | **Soft Delete** | Users, products, and orders are never hard-deleted; global query filters hide them automatically. |
 | **Product Variants** | Each product has multiple SKU variants (size, color, price, stock). |
 | **Stock Management** | Reserved quantity tracking; stock is restored on cancellation or payment failure. |
-| **Wishlist System** | Comprehensive management allowing buyers to create multiple lists, smartly toggle product variants (add/remove with a single endpoint), and retrieve items via true DB pagination. |
+| **Wishlist System** | Management allowing buyers to smartly toggle product variants and retrieve items via true DB pagination. |
 | **Coupon System** | Percentage or fixed-amount discounts with usage limits and date ranges. |
 | **True DB Pagination** | All list endpoints execute memory-optimized paging natively at the database level. |
 | **Global Query Filters** | Deleted records excluded at the EF Core level — no manual `.Where()` needed. |
 | **Rate Limiting** | Three policies protecting auth, checkout, and browsing endpoints. |
 | **Auto-Cancel Jobs** | Hangfire delayed jobs cancel unpaid orders automatically after a configurable timeout. |
-| **Response Time Header** | Every response includes `X-Response-Time` for performance monitoring. |
-| **Loyalty Points System** | Full ledger implementation. Buyers earn points upon successful payment completion, spend points as a discount at checkout (subject to threshold verification), and have points accurately refunded or revoked during cancellation or payment failures. |
+| **Loyalty Points System** | Buyers earn points upon successful payment completion, and spend points as a discount at checkout (with auto-refunds on cancellation). |
 
 ---
 
@@ -317,23 +287,7 @@ dotnet run
 
 Every endpoint (whether successful or failed) returns the exact same wrapper shape, making frontend consumption seamless.
 
-**Example 1: Success Response (200 OK)**
-
-```json
-{
-  "isSuccess": true,
-  "statusCode": 200,
-  "errorCode": "",
-  "message": "Operation successful.",
-  "data": {
-    "id": 1,
-    "name": "Product Name"
-  }
-}
-
-```
-
-**Example 2: Error Response (404 Not Found handled by Middleware)**
+**Example: Error Response (404 Not Found handled by Middleware)**
 
 ```json
 {
