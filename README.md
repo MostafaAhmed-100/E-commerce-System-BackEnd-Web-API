@@ -1,6 +1,6 @@
 🛒 E-Commerce REST API V2
 
-A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8 Web API**. The system supports three distinct roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, payment gateway integration, coupon discounts, rate limiting, background jobs, structured logging, clean data validation, centralized exception handling, secure account recovery, and full bilingual localization.
+A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8 Web API**. The system supports three distinct roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, payment gateway integration, coupon discounts, product reviews & ratings, rate limiting, background jobs, structured logging, clean data validation, centralized exception handling, secure account recovery, and full bilingual localization.
 
 ## 🚀 Tech Stack
 
@@ -29,7 +29,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 ├── Repository/
 │   ├── GenericRepository/       # Base CRUD operations
 │   ├── SpecificRepository/      # Domain-specific queries
-│   └── UnitOfWork/              # Unit of Work & Transaction management
+│   └── UnitOfWork/              # Unit of Work & Transaction management (used across all services)
 ├── Entities/                    # EF Core models (Clean POCOs)
 ├── DTOs/
 │   ├── Request_DTOs/            # Input models (Strictly enforced with `required`)
@@ -57,7 +57,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 | --- | --- |
 | `Admin` | Manages categories, updates any order status. |
 | `Seller` | Creates/manages their own products, variants, and coupons. *(Requires National ID verification).* |
-| `Buyer` | Browses products, manages cart, manages wishlists, places and cancels orders, manages saved payment cards, and earns/redeems loyalty points. |
+| `Buyer` | Browses products, manages cart, manages wishlists, places and cancels orders, manages saved payment cards, earns/redeems loyalty points, and leaves verified reviews & ratings on purchased products. |
 
 ---
 
@@ -107,6 +107,16 @@ To change the response language, simply pass the `Accept-Language` header in you
 | POST | `/{wishlistId}/toggle-item` | ✅ Buyer | Smartly toggle (add/remove) a product variant in the wishlist |
 | GET | `/{wishlistId}/items` | ✅ Buyer | Get paginated items (variants) inside a specific wishlist |
 
+### ⭐ Review — `/api/Review`
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/` | ✅ Buyer | Submit a review & rating for a product variant (validated against actual purchase history) |
+| PUT | `/{reviewId}` | ✅ Buyer | Update the authenticated buyer's own review |
+| DELETE | `/{reviewId}` | ✅ Buyer | Delete the authenticated buyer's own review |
+| GET | `/variant/{variantId}` | ❌ | Get paginated reviews for a specific product variant |
+| GET | `/variant/{variantId}/summary` | ❌ | Get aggregated rating summary (`AverageRating`, `TotalReviews`) for a variant |
+
 *(Note: Other modules including Address, Product, Category, Cart, SavedCard, Order, Payment, and Coupon follow a similarly structured RESTful design).*
 
 ---
@@ -149,12 +159,14 @@ Clients that exceed limits receive `429 Too Many Requests`.
 
 The project architecture has undergone significant data-layer refactoring to secure high throughput and minimize memory footprints under heavy production loads:
 
-* **Unit of Work & Transactions:** Centralized transaction control across all data-modifying services, ensuring absolute data integrity and atomic operations (Commit/Rollback).
+* **Unit of Work Everywhere:** Every service now operates exclusively through `IUnitOfWork`, giving atomic commits/rollbacks and consistent transactional integrity across the entire data-modifying surface (not just Order/Payment flows).
 * **Clean POCOs & Fluent API:** Completely stripped `Data Annotations` from domain entities. Relies exclusively on EF Core's `IEntityTypeConfiguration` (Fluent API) for schema generation, business logic constraints, default values, and index definitions, ensuring pure domain models.
 * **True Database-Level Pagination:** Completely decoupled list endpoints from in-memory processing. All `GET` list requests stream `PageNumber` and `PageSize` parameters straight to SQL Server using optimized `.Skip()` and `.Take()` operations.
 * **Separation of Concerns for Heavy Relationships:** To avoid massive memory allocations, large structural joins have been eliminated. Resources are retrieved efficiently as light, standalone entries.
 * **Aggressive No-Tracking Strategy:** Applied `.AsNoTracking()` globally across all read-only repository queries, bypassing EF Core's change tracker and providing immediate CPU and memory relief.
+* **Split Queries for Collections:** Adopted `.AsSplitQuery()` on multi-collection includes (e.g., product variants with reviews) to avoid cartesian-explosion row duplication and reduce data transferred over the wire.
 * **Elimination of N+1 Query Problems:** Refactored relational retrieval loops to utilize explicit eager loading (`.Include()`), condensing nested calls down to a single, high-performance `JOIN`.
+* **Streamlined Repository Interfaces:** Removed redundant/duplicate repository methods in favor of shared generic operations, shrinking the surface area and easing maintenance.
 
 ---
 
@@ -163,8 +175,8 @@ The project architecture has undergone significant data-layer refactoring to sec
 To ensure the highest level of reliability and prevent regressions, the core business logic has been rigorously tested:
 
 * **Frameworks Used:** `NUnit` as the testing framework and `Moq` for isolating dependencies.
-* **Test Coverage:** Comprehensive testing of the Service Layer (e.g., `OrderService`, `AuthService`, `ProductService`, `CartService`, `WishlistService`, `CategoryService`, `CouponService`, `AddressService`, `SavedCardService`).
-* **Boundary & Exception Testing:** Every critical path is tested, including complex business logic (e.g., Stock reservation, Loyalty Points calculations, Invalid/Expired Coupons, and Unauthorized modifications).
+* **Test Coverage:** Comprehensive testing of the Service Layer (e.g., `OrderService`, `AuthService`, `ProductService`, `CartService`, `WishlistService`, `CategoryService`, `CouponService`, `AddressService`, `SavedCardService`, `ReviewService`).
+* **Boundary & Exception Testing:** Every critical path is tested, including complex business logic (e.g., Stock reservation, Loyalty Points calculations, Invalid/Expired Coupons, duplicate/unauthorized reviews, and Unauthorized modifications).
 * **Mocked Integrations:** External services, Repositories, Unit of Work, and Identity Managers (`UserManager`/`RoleManager`) are fully mocked to ensure tests run fast and deterministically without needing a live database or SMTP server.
 
 ---
@@ -177,6 +189,7 @@ The project implements a robust, centralized error-handling and observability ar
 * **Strict Input Validation:** DTOs are protected using C# 11 `required` properties alongside `FluentValidation`. A global `ValidationFilter` intercepts incoming requests, preventing bad data from ever reaching the Controller.
 * **Centralized Exception Middleware:** A custom `ExceptionMiddleware` sits at the top of the request pipeline. It captures unhandled exceptions, logs them with full request paths via Serilog, prevents app crashes, and maps them to standardized HTTP responses.
 * **Domain-Specific Exceptions:** Repetitive error returns in the Service Layer have been replaced with clean, domain-specific exceptions (`NotFoundException`, `BadRequestException`, `UnauthorizedException`, `ConflictException`).
+* **Transactional Integrity:** With every service now routed through `IUnitOfWork`, failures mid-operation trigger a full rollback, with the originating error logged alongside the affected request path.
 
 ---
 
@@ -185,7 +198,7 @@ The project implements a robust, centralized error-handling and observability ar
 The project leverages **AutoMapper** profiles across the Service Layer to maintain a separation of concerns, eliminating messy manual mapping code:
 
 * **Recursive Mapping:** Configured to automatically resolve infinite self-referencing hierarchy loops.
-* **Calculated Fields Mapping:** Offloads computation logic (such as subtotals and price reductions) directly into the mapping profiles.
+* **Calculated Fields Mapping:** Offloads computation logic (such as subtotals, price reductions, and variant `AverageRating`) directly into the mapping profiles.
 * **State Updates Tracking:** Utilizes existing instance updating semantics to maintain EF Core's change tracking state.
 * **Strict Collection Typing:** Synchronized mapped types directly with response wrapper expectations.
 
@@ -268,12 +281,13 @@ dotnet run
 | **Email Integration** | Automated, secure email dispatch for user registration confirmation and account recovery. |
 | **Structured Logging** | Comprehensive observability using Serilog (Request tracking, Info/Warning/Error trails). |
 | **Payment Gateway** | Complete checkout flow with third-party webhooks, tokenized saved cards, and asynchronous payment verification. |
-| **Clean DB Architecture** | Decoupled EF Core configurations using `IEntityTypeConfiguration` (Fluent API) & Unit of Work pattern. |
+| **Clean DB Architecture** | Unit of Work pattern applied across every service for atomic, transactional data operations, on top of decoupled EF Core configurations (`IEntityTypeConfiguration`). |
 | **Clean Validation** | Fluent Validation rules separated from DTOs, enforced via a global Action Filter. |
 | **Centralized Error Handling** | Custom middleware intercepts exceptions, enriches logs, and standardizes API responses. |
 | **Bilingual Support** | Full English and Arabic response localization based on the `Accept-Language` header. |
 | **Soft Delete** | Users, products, and orders are never hard-deleted; global query filters hide them automatically. |
-| **Product Variants** | Each product has multiple SKU variants (size, color, price, stock). |
+| **Product Variants** | Each product has multiple SKU variants (size, color, price, stock), each carrying live `AverageRating` and `TotalReviews` aggregates. |
+| **Reviews & Ratings** | Buyers submit ratings/comments on purchased variants; purchase is validated before submission, and aggregate rating stats update automatically. |
 | **Stock Management** | Reserved quantity tracking; stock is restored on cancellation or payment failure. |
 | **Wishlist System** | Management allowing buyers to smartly toggle product variants and retrieve items via true DB pagination. |
 | **Coupon System** | Percentage or fixed-amount discounts with usage limits and date ranges. |
