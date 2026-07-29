@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using WebApplication1.Constants;
 using WebApplication1.Data;
 using WebApplication1.Entitys;
 using WebApplication1.Repository.GenericRepository;
@@ -39,10 +40,19 @@ namespace WebApplication1.Repository.SpecificRepository.OrderRepository
 
         public async Task<Order?> GetOrderWithItemsByIdAsync(int orderId)
         {
-            return await _AppDbcontext.Set<Order>()
+            return await _AppDbcontext.Orders
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.ProductVariant)
                 .FirstOrDefaultAsync(o => o.OrderId == orderId);
+        }
+
+        public async Task<bool> HasBuyerPurchasedVariantAsync(int buyerId, int productVariantId)
+        {
+            var purchased = await _AppDbcontext.Orders
+                .AnyAsync(x => x.BuyerId == buyerId 
+                && x.Status == OrderStatus.successful 
+                && x.OrderItems.Any(c => c.ProductVariantId == productVariantId));
+            return purchased;
         }
     }
 }

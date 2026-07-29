@@ -1,4 +1,4 @@
-# 🛒 E-Commerce REST API V2
+🛒 E-Commerce REST API V2
 
 A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8 Web API**. The system supports three distinct roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, payment gateway integration, coupon discounts, rate limiting, background jobs, structured logging, clean data validation, centralized exception handling, secure account recovery, and full bilingual localization.
 
@@ -10,7 +10,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 | **ORM** | Entity Framework Core |
 | **Database** | SQL Server |
 | **Auth** | ASP.NET Core Identity + JWT Bearer + Refresh Tokens |
-| **Architecture** | Clean Architecture principles, Repository Pattern + Service Layer |
+| **Architecture** | Clean Architecture principles, Repository Pattern + Unit of Work & Transactions + Service Layer |
 | **Object Mapping** | AutoMapper |
 | **Input Validation** | Fluent Validation + C# 11 `required` modifiers |
 | **Logging** | Serilog (File & Console Sinks, Request Tracking) |
@@ -24,27 +24,28 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 ## 🏗️ Project Structure
 
 ```text
-├── Controllers/               # API endpoints (thin layer, delegates to services)
-├── Services/                  # Business logic layer (Clean & free of HTTP concerns)
+├── Controllers/                 # API endpoints (thin layer, delegates to services)
+├── Services/                    # Business logic layer (Clean & free of HTTP concerns)
 ├── Repository/
-│   ├── GenericRepository/     # Base CRUD operations
-│   └── SpecificRepository/    # Domain-specific queries
-├── Entities/                  # EF Core models (Clean POCOs)
+│   ├── GenericRepository/       # Base CRUD operations
+│   ├── SpecificRepository/      # Domain-specific queries
+│   └── UnitOfWork/              # Unit of Work & Transaction management
+├── Entities/                    # EF Core models (Clean POCOs)
 ├── DTOs/
-│   ├── Request_DTOs/          # Input models (Strictly enforced with `required`)
-│   └── Response_DTOs/         # Output models (consistent wrapper)
-├── Validators/                # Fluent Validation rules isolated from DTOs
-├── Mappings/                  # AutoMapper Profiles (Clean DTO transformation)
-├── Filters/                   # Action Filters (e.g., Validation interceptors)
-├── Middlewares/               # Custom request pipeline (Exception handling & Log enrichment)
-├── Exceptions/                # Domain-specific custom exceptions
-├── Resources/                 # Localization files (English & Arabic)
-├── Constants/                 # OrderStatus constants and other shared literals
-├── BackgroundJobs/            # Hangfire job definitions
-├── Tests/                     # Unit Tests using NUnit and Moq
+│   ├── Request_DTOs/            # Input models (Strictly enforced with `required`)
+│   └── Response_DTOs/           # Output models (consistent wrapper)
+├── Validators/                  # Fluent Validation rules isolated from DTOs
+├── Mappings/                    # AutoMapper Profiles (Clean DTO transformation)
+├── Filters/                     # Action Filters (e.g., Validation interceptors)
+├── Middlewares/                 # Custom request pipeline (Exception handling & Log enrichment)
+├── Exceptions/                  # Domain-specific custom exceptions
+├── Resources/                   # Localization files (English & Arabic)
+├── Constants/                   # OrderStatus constants and other shared literals
+├── BackgroundJobs/              # Hangfire job definitions
+├── Tests/                       # Unit Tests using NUnit and Moq
 └── Data/
-    ├── Configurations/        # EF Core Fluent API entity configurations
-    └── AppDbContext           # Context and migrations
+    ├── Configurations/          # EF Core Fluent API entity configurations
+    └── AppDbContext             # Context and migrations
 
 ```
 
@@ -148,6 +149,7 @@ Clients that exceed limits receive `429 Too Many Requests`.
 
 The project architecture has undergone significant data-layer refactoring to secure high throughput and minimize memory footprints under heavy production loads:
 
+* **Unit of Work & Transactions:** Centralized transaction control across all data-modifying services, ensuring absolute data integrity and atomic operations (Commit/Rollback).
 * **Clean POCOs & Fluent API:** Completely stripped `Data Annotations` from domain entities. Relies exclusively on EF Core's `IEntityTypeConfiguration` (Fluent API) for schema generation, business logic constraints, default values, and index definitions, ensuring pure domain models.
 * **True Database-Level Pagination:** Completely decoupled list endpoints from in-memory processing. All `GET` list requests stream `PageNumber` and `PageSize` parameters straight to SQL Server using optimized `.Skip()` and `.Take()` operations.
 * **Separation of Concerns for Heavy Relationships:** To avoid massive memory allocations, large structural joins have been eliminated. Resources are retrieved efficiently as light, standalone entries.
@@ -161,9 +163,9 @@ The project architecture has undergone significant data-layer refactoring to sec
 To ensure the highest level of reliability and prevent regressions, the core business logic has been rigorously tested:
 
 * **Frameworks Used:** `NUnit` as the testing framework and `Moq` for isolating dependencies.
-* **Test Coverage:** Comprehensive testing of the Service Layer (e.g., `OrderService`, `AuthService`, `ProductService`, `CartService`, etc.).
+* **Test Coverage:** Comprehensive testing of the Service Layer (e.g., `OrderService`, `AuthService`, `ProductService`, `CartService`, `WishlistService`, `CategoryService`, `CouponService`, `AddressService`, `SavedCardService`).
 * **Boundary & Exception Testing:** Every critical path is tested, including complex business logic (e.g., Stock reservation, Loyalty Points calculations, Invalid/Expired Coupons, and Unauthorized modifications).
-* **Mocked Integrations:** External services, Repositories, and Identity Managers (`UserManager`/`RoleManager`) are fully mocked to ensure tests run fast and deterministically without needing a live database or SMTP server.
+* **Mocked Integrations:** External services, Repositories, Unit of Work, and Identity Managers (`UserManager`/`RoleManager`) are fully mocked to ensure tests run fast and deterministically without needing a live database or SMTP server.
 
 ---
 
@@ -262,11 +264,11 @@ dotnet run
 | **Advanced Authentication** | Secure JWT issuance with long-lived Refresh Tokens, coupled with **strict email verification** required prior to login access. |
 | **Role-Based Profiles** | Dynamic profile retrieval and updating tailored to user roles (Buyer/Seller) utilizing AutoMapper, strict DTO isolation, and KYC/National ID enforcement for sellers. |
 | **Account Management** | Comprehensive operations including secure password modification, soft-deletion, and modular **Forgot/Reset Password** flows via tokenized emails. |
-| **Unit Testing** | High test coverage using **NUnit & Moq** to validate business rules and edge cases safely. |
+| **Unit Testing** | High test coverage using **NUnit & Moq** to validate business rules, transactions, and edge cases safely. |
 | **Email Integration** | Automated, secure email dispatch for user registration confirmation and account recovery. |
 | **Structured Logging** | Comprehensive observability using Serilog (Request tracking, Info/Warning/Error trails). |
 | **Payment Gateway** | Complete checkout flow with third-party webhooks, tokenized saved cards, and asynchronous payment verification. |
-| **Clean DB Architecture** | Decoupled EF Core configurations using `IEntityTypeConfiguration` (Fluent API). |
+| **Clean DB Architecture** | Decoupled EF Core configurations using `IEntityTypeConfiguration` (Fluent API) & Unit of Work pattern. |
 | **Clean Validation** | Fluent Validation rules separated from DTOs, enforced via a global Action Filter. |
 | **Centralized Error Handling** | Custom middleware intercepts exceptions, enriches logs, and standardizes API responses. |
 | **Bilingual Support** | Full English and Arabic response localization based on the `Accept-Language` header. |

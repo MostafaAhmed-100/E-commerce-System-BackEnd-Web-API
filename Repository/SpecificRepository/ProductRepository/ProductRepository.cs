@@ -40,7 +40,7 @@ namespace WebApplication1.Repository.SpecificRepository.ProductRepository
         {
             var outOfStockProducts = await _AppDbcontext.Products
                 .Include(p => p.ProductVariants)
-                .Where(p => p.ProductVariants.All(v => v.QuantityInStock == 0))
+                .Where(p => p.ProductVariants.Any() && p.ProductVariants.All(v => v.QuantityInStock == 0))
                 .AsNoTracking()
                 .ToListAsync();
             return outOfStockProducts;

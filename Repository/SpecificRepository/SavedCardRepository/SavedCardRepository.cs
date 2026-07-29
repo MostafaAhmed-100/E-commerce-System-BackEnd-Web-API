@@ -13,14 +13,14 @@ namespace WebApplication1.Repository.SpecificRepository.SavedCardRepository
 
         public async Task<IEnumerable<SavedCard>> GetSavedCardByUserIdAsync(int userId)
         {
-            return await _AppDbcontext.Set<SavedCard>()
+            return await _AppDbcontext.SavedCards
                 .Where(c => c.UserId == userId && c.IsActive)
                 .ToListAsync();
         }
 
         public async Task<bool> CheckCardOwnershipAsync(int cardId, int userId)
         {
-            return await _AppDbcontext.Set<SavedCard>()
+            return await _AppDbcontext.SavedCards
                 .AnyAsync(c => c.CardId == cardId && c.UserId == userId && c.IsActive);
         }
     }

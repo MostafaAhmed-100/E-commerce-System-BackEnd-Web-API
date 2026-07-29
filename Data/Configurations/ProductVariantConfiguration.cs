@@ -46,6 +46,13 @@ namespace WebApplication1.Data.Configurations
                 .WithMany(p => p.ProductVariants)
                 .HasForeignKey(p => p.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Property(pv => pv.AverageRating)
+                .HasColumnType("decimal(3, 2)")
+                .HasDefaultValue(0m);
+
+            builder.Property(pv => pv.TotalReviews)
+                   .HasDefaultValue(0);
         }
     }
 }

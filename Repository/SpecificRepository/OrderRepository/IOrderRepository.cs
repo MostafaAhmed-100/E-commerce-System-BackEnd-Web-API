@@ -10,5 +10,6 @@ namespace WebApplication1.Repository.SpecificRepository.OrderRepository
         Task<(IEnumerable<Order> Items, int TotalCount)> GetOrdersListByBuyerIdAsync(int buyerId , int pageSize , int pageNumber);
 
         Task<Order?> GetOrderWithItemsByIdAsync(int orderId);
+        Task<bool> HasBuyerPurchasedVariantAsync(int buyerId, int productVariantId);
     }
 }

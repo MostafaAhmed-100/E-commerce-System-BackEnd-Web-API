@@ -31,7 +31,6 @@ namespace WebApplication1.Repository.SpecificRepository.SellerRepository
         {
             var seller = _AppDbcontext.Sellers.Include(I => I.User)
                 .AsNoTracking()
-                .AsSplitQuery()
                 .FirstOrDefaultAsync(I => I.SellerId == SellerId);
             return seller;
         }

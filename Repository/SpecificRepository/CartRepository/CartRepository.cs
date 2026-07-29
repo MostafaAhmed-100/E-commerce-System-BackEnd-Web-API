@@ -12,12 +12,12 @@ namespace WebApplication1.Repository.SpecificRepository.CartRepository
 
         public async Task<Cart?> GetCartWithItemsAsync(int buyerId)
         {
-            var cart = await _AppDbcontext.Carts.
-                Where(B => B.BuyerId == buyerId)
+            var cart = await _AppDbcontext.Carts
                 .Include(I => I.Items)
                 .ThenInclude(pv => pv.ProductVariant)
                 .ThenInclude(p => p.Product)
-                .FirstOrDefaultAsync();
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(B => B.BuyerId == buyerId);
             return cart;
         }
     }

@@ -5,6 +5,6 @@ namespace WebApplication1.Repository.SpecificRepository.AddressRepository
 {
     public interface IAddressRepository : IGenericRepository<Address>
     {
-        Task<IEnumerable<Address>> GetAddressesByUserIdAsync(int UserId);
+
     }
 }

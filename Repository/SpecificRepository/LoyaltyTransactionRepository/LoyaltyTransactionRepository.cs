@@ -13,10 +13,9 @@ namespace WebApplication1.Repository.SpecificRepository.LoyaltyTransactionReposi
 
         public async Task<int> GetTotalPointsFromLedgerByBuyerIdAsync(int BuyerId)
         {
-            var totalpoints =  _AppDbcontext.loyaltyTransactions
-                .Where(x => x.BuyerId == BuyerId)
-                .Select(x => x.Points);
-            return await totalpoints.SumAsync();
+            var totalpoints = _AppDbcontext.loyaltyTransactions
+                .Where(x => x.BuyerId == BuyerId);
+            return await totalpoints.SumAsync( x => x.Points);
         }
 
         public async Task<LoyaltyTransaction?> GetTransactionByOrderIdAndTypeAsync(int OrderId, string type)
@@ -27,18 +26,23 @@ namespace WebApplication1.Repository.SpecificRepository.LoyaltyTransactionReposi
             return  transaction;
         }
 
-        public async Task<IEnumerable<LoyaltyTransaction>> GetTransactionsByBuyerIdAsync(int buyerId, int pageNumber, int pageSize)
+        public async Task<(IEnumerable<LoyaltyTransaction>, int TotalCount)?> GetTransactionsByBuyerIdAsync(int buyerId, int pageNumber, int pageSize)
         {
-            var transactions = await _AppDbcontext.loyaltyTransactions
+            var query = _AppDbcontext.loyaltyTransactions
                 .AsNoTrackingWithIdentityResolution()
                 .Where(x => x.BuyerId == buyerId)
-                .Include(x => x.Order)
+                .Include(x => x.Order);
+
+            var TotalCount = await query.CountAsync();
+            if (TotalCount == 0)
+                return null;
+            var items = await query
                 .OrderByDescending(x => x.CreatedAt)
                 .Skip(pageSize * (pageNumber - 1))
                 .Take(pageSize)
                 .ToListAsync();
 
-            return  transactions;
+            return (items, TotalCount);
         }
     }
 }

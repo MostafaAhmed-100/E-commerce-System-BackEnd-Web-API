@@ -5,7 +5,7 @@ namespace WebApplication1.Repository.SpecificRepository.LoyaltyTransactionReposi
 {
     public interface ILoyaltyTransactionRepository : IGenericRepository<LoyaltyTransaction>
     {
-        Task<IEnumerable<LoyaltyTransaction>> GetTransactionsByBuyerIdAsync(int buyerId, int pageNumber, int pageSize);
+        Task<(IEnumerable<LoyaltyTransaction>, int TotalCount)?> GetTransactionsByBuyerIdAsync(int buyerId, int pageNumber, int pageSize);
 
         Task<LoyaltyTransaction?> GetTransactionByOrderIdAndTypeAsync(int OrderId, string type);
 

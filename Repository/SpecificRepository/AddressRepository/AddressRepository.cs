@@ -10,14 +10,5 @@ namespace WebApplication1.Repository.SpecificRepository.AddressRepository
         public AddressRepository(AppDbContext appDbcontext) : base(appDbcontext)
         {
         }
-
-        public async Task<IEnumerable<Address>> GetAddressesByUserIdAsync(int UserId)
-        {
-            var Addresses = await _AppDbcontext.Addresses
-                .Where(p => p.UserId == UserId)
-                .AsNoTracking()
-                .ToListAsync();
-            return Addresses;
-        }
     }
 }

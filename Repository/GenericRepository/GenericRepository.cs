@@ -19,13 +19,18 @@ namespace WebApplication1.Repository.GenericRepository
 
         public async Task<IEnumerable<T>> GetAllAsync()
         {
-            var GetAll = await _AppDbcontext.Set<T>().ToListAsync();
+            var GetAll = await _AppDbcontext.Set<T>()
+                .AsNoTrackingWithIdentityResolution()
+                .ToListAsync();
             return GetAll;
         }
 
         public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
         {
-            return await _AppDbcontext.Set<T>().Where(predicate).ToListAsync();
+            return await _AppDbcontext.Set<T>()
+                .AsNoTracking()
+                .Where(predicate)
+                .ToListAsync();
         }
 
         public async Task<(IEnumerable<T> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize)
@@ -68,7 +73,6 @@ namespace WebApplication1.Repository.GenericRepository
         public async Task<(IEnumerable<T> Items, int TotalCount)> ApplyPaginationAsync(IQueryable<T> query, int pageNumber, int pageSize)
         {
             var TotalCount = await query.CountAsync();
-            int totalPages = TotalCount / pageSize;
             var pagedResult = await query
                 .Skip (pageSize * (pageNumber - 1))
                 .Take(pageSize)

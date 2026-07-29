@@ -16,6 +16,9 @@ namespace WebApplication1.Entitys
         public required string Size { get; set; }
         public required string Color { get; set; }
         public  Product Product { get; set; }
+        public Decimal AverageRating { get; set; }
+        public int TotalReviews { get; set; }
+
 
     }
 }
