@@ -2,9 +2,12 @@
 {
     public class ValidationException : Exception
     {
-        public ValidationException(IEnumerable<string> errors)
-            : base(string.Join(" | ", errors))
+        public IDictionary<string, string[]> Errors { get; }
+
+        public ValidationException(IDictionary<string, string[]> errors)
+            : base("One or more validation errors occurred.")
         {
+            Errors = errors;
         }
     }
 }

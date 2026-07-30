@@ -22,7 +22,13 @@ namespace WebApplication1.Filters
 
                     if (!validationResult.IsValid)
                     {
-                        var errors =  validationResult.Errors.Select(e => e.ErrorMessage);
+                        var errors = validationResult.Errors
+                            .GroupBy(e => e.PropertyName)
+                            .ToDictionary(
+                                g => g.Key,
+                                g => g.Select(e => e.ErrorMessage).ToArray()
+                            );
+
                         throw new Exceptions.ValidationException(errors);
                     }
                 }

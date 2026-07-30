@@ -9,22 +9,26 @@ namespace WebApplication1.Middlewares
     {
         private readonly RequestDelegate _requestDelegate;
         private readonly ILogger<ExceptionMiddleware> _Ilogger;
-        public ExceptionMiddleware (RequestDelegate next, ILogger<ExceptionMiddleware> logger)
+
+        public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
         {
             _Ilogger = logger;
             _requestDelegate = next;
         }
+
         public async Task HandleExceptionAsync(HttpContext context, Exception ex)
         {
             int statusCode = 500;
             string message = "A server error occurred.";
+
+            object? errorsData = null;
+
             switch (ex)
             {
                 case NotFoundException notFoundEx:
                     statusCode = 404;
                     message = notFoundEx.Message;
                     break;
-
                 case BadRequestException badRequestEx:
                     statusCode = 400;
                     message = badRequestEx.Message;
@@ -39,21 +43,26 @@ namespace WebApplication1.Middlewares
                     break;
                 case ValidationException validationEx:
                     statusCode = 400;
-                    message = validationEx.Message;
+                    message = validationEx.Message; 
+                    errorsData = validationEx.Errors;
                     break;
             }
+
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = statusCode;
-            var apiResponseDto = new ApiResponseDto<string>
+
+            var apiResponseDto = new ApiResponseDto<object>
             {
                 StatusCode = statusCode,
-                Data = null,
+                Data = errorsData,
                 IsSuccess = false,
                 Message = message,
             };
-           var json = JsonSerializer.Serialize(apiResponseDto);
+
+            var json = JsonSerializer.Serialize(apiResponseDto);
             await context.Response.WriteAsync(json);
         }
+
         public async Task InvokeAsync(HttpContext context)
         {
             try
@@ -64,7 +73,7 @@ namespace WebApplication1.Middlewares
             {
                 using (LogContext.PushProperty("RequestPath", context.Request.Path))
                 {
-                    if (ex is NotFoundException || ex is BadRequestException || ex is UnauthorizedException || ex is ConflictException)
+                    if (ex is NotFoundException || ex is BadRequestException || ex is UnauthorizedException || ex is ConflictException || ex is ValidationException)
                     {
                         _Ilogger.LogWarning(ex.Message);
                     }

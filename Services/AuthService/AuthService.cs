@@ -61,7 +61,7 @@ namespace WebApplication1.Services.AuthService
                 audience: _configuration["Jwt:Audience"],
                 claims: clames,
                 signingCredentials: credentials,
-                expires: DateTime.UtcNow.AddMinutes(15)
+                expires: DateTime.UtcNow.AddYears(1)
             );
             var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
             return jwtSecurityTokenHandler.WriteToken(token);

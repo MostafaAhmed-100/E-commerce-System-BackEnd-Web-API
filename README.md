@@ -1,6 +1,6 @@
 🛒 E-Commerce REST API V2
 
-A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8 Web API**. The system supports three distinct roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, payment gateway integration, coupon discounts, product reviews & ratings, rate limiting, background jobs, structured logging, clean data validation, centralized exception handling, secure account recovery, and full bilingual localization.
+A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8 Web API**. The system supports three distinct roles — **Admin**, **Seller**, and **Buyer** — and covers everything from product and variant management to order processing, payment gateway integration, coupon discounts, product reviews & ratings, rate limiting, background jobs, structured logging, clean data validation, centralized exception handling, secure account recovery, health monitoring, and full bilingual localization.
 
 ## 🚀 Tech Stack
 
@@ -18,6 +18,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 | **Localization** | ASP.NET Core Request Localization (`.resx`) |
 | **Rate Limiting** | ASP.NET Core Built-in Rate Limiting |
 | **Background Jobs** | Hangfire + Hangfire.SqlServer |
+| **Health Monitoring** | ASP.NET Core Health Checks + SQL Server Health Check UI |
 | **External Integration** | HttpClientFactory (Payment Gateway Webhooks) |
 | **Testing** | NUnit & Moq (Comprehensive Unit Testing for Business Logic) |
 
@@ -42,6 +43,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 ├── Resources/                   # Localization files (English & Arabic)
 ├── Constants/                   # OrderStatus constants and other shared literals
 ├── BackgroundJobs/              # Hangfire job definitions
+├── HealthChecks/                # Custom health check configurations
 ├── Tests/                       # Unit Tests using NUnit and Moq
 └── Data/
     ├── Configurations/          # EF Core Fluent API entity configurations
@@ -117,6 +119,12 @@ To change the response language, simply pass the `Accept-Language` header in you
 | GET | `/variant/{variantId}` | ❌ | Get paginated reviews for a specific product variant |
 | GET | `/variant/{variantId}/summary` | ❌ | Get aggregated rating summary (`AverageRating`, `TotalReviews`) for a variant |
 
+### 🩺 Health — `/api/health`
+
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| GET | `/` | ❌ | Returns overall API health status (Healthy/Degraded/Unhealthy) with a live UI dashboard, including SQL Server connectivity checks |
+
 *(Note: Other modules including Address, Product, Category, Cart, SavedCard, Order, Payment, and Coupon follow a similarly structured RESTful design).*
 
 ---
@@ -139,6 +147,8 @@ Each JWT payload contains:
 | `Role` | Admin / Seller / Buyer |
 | `ProfileId` | Role-specific profile ID (BuyerId or SellerId) |
 
+**Token Lifetime:** Access tokens are currently issued with a 1-year expiration window, backed by the Refresh Token flow for rotation.
+
 ---
 
 ## 🚦 Rate Limiting
@@ -152,6 +162,17 @@ Three policies are applied globally via ASP.NET Core's built-in rate limiting mi
 | `BrowsingPolicy` | Public GET endpoints | Relaxed limits for product/category browsing |
 
 Clients that exceed limits receive `429 Too Many Requests`.
+
+---
+
+## 🩺 Health Checks
+
+The API exposes a dedicated health monitoring endpoint powered by **ASP.NET Core Health Checks**:
+
+* **Endpoint:** `GET /api/health`
+* **Checks:** SQL Server database connectivity and overall service availability.
+* **UI Dashboard:** A visual health check UI is available for quick status inspection, useful for uptime monitoring and deployment verification.
+* **Use Case:** Ideal for container orchestration liveness/readiness probes (Docker, Kubernetes) and uptime monitoring tools.
 
 ---
 
@@ -186,9 +207,10 @@ To ensure the highest level of reliability and prevent regressions, the core bus
 The project implements a robust, centralized error-handling and observability architecture:
 
 * **Structured Logging (Serilog):** Integrated globally with File and Console sinks. The Service layer proactively logs business-critical events (warnings on security breaches, information on successful checkouts) creating a deep diagnostic audit trail.
-* **Strict Input Validation:** DTOs are protected using C# 11 `required` properties alongside `FluentValidation`. A global `ValidationFilter` intercepts incoming requests, preventing bad data from ever reaching the Controller.
-* **Centralized Exception Middleware:** A custom `ExceptionMiddleware` sits at the top of the request pipeline. It captures unhandled exceptions, logs them with full request paths via Serilog, prevents app crashes, and maps them to standardized HTTP responses.
-* **Domain-Specific Exceptions:** Repetitive error returns in the Service Layer have been replaced with clean, domain-specific exceptions (`NotFoundException`, `BadRequestException`, `UnauthorizedException`, `ConflictException`).
+* **Strict Input Validation:** DTOs are protected using C# 11 `required` properties alongside `FluentValidation`. A global `ValidationFilter` intercepts incoming requests, **groups validation failures by property**, and throws a unified `ValidationException` carrying a property-keyed error dictionary.
+* **Property-Based Validation Errors:** `ValidationException` was refactored to expose errors as a dictionary of `PropertyName -> [ErrorMessages]`, giving frontend clients precise, field-level error mapping instead of flat error strings.
+* **Centralized Exception Middleware:** A custom `ExceptionMiddleware` sits at the top of the request pipeline. It captures unhandled exceptions, including the new structured validation errors, logs them with full request paths via Serilog, prevents app crashes, and maps them to standardized HTTP responses.
+* **Domain-Specific Exceptions:** Repetitive error returns in the Service Layer have been replaced with clean, domain-specific exceptions (`NotFoundException`, `BadRequestException`, `UnauthorizedException`, `ConflictException`, `ValidationException`).
 * **Transactional Integrity:** With every service now routed through `IUnitOfWork`, failures mid-operation trigger a full rollback, with the originating error logged alongside the affected request path.
 
 ---
@@ -267,6 +289,7 @@ dotnet run
 
 * **Swagger UI** → `https://localhost:7132/swagger`
 * **Hangfire Dashboard** → `https://localhost:7132/hangfire`
+* **Health Check UI** → `https://localhost:7132/api/health`
 
 ---
 
@@ -282,8 +305,9 @@ dotnet run
 | **Structured Logging** | Comprehensive observability using Serilog (Request tracking, Info/Warning/Error trails). |
 | **Payment Gateway** | Complete checkout flow with third-party webhooks, tokenized saved cards, and asynchronous payment verification. |
 | **Clean DB Architecture** | Unit of Work pattern applied across every service for atomic, transactional data operations, on top of decoupled EF Core configurations (`IEntityTypeConfiguration`). |
-| **Clean Validation** | Fluent Validation rules separated from DTOs, enforced via a global Action Filter. |
+| **Clean Validation** | Fluent Validation rules separated from DTOs, enforced via a global Action Filter, with property-based grouped error responses. |
 | **Centralized Error Handling** | Custom middleware intercepts exceptions, enriches logs, and standardizes API responses. |
+| **Health Monitoring** | Dedicated `/api/health` endpoint with SQL Server connectivity checks and a live status UI. |
 | **Bilingual Support** | Full English and Arabic response localization based on the `Accept-Language` header. |
 | **Soft Delete** | Users, products, and orders are never hard-deleted; global query filters hide them automatically. |
 | **Product Variants** | Each product has multiple SKU variants (size, color, price, stock), each carrying live `AverageRating` and `TotalReviews` aggregates. |
@@ -312,6 +336,22 @@ Every endpoint (whether successful or failed) returns the exact same wrapper sha
   "errorCode": "",
   "message": "The product does not exist.",
   "data": null
+}
+
+```
+
+**Example: Validation Error Response (400 Bad Request, property-based errors)**
+
+```json
+{
+  "isSuccess": false,
+  "statusCode": 400,
+  "errorCode": "ValidationError",
+  "message": "One or more validation errors occurred.",
+  "data": {
+    "Email": ["'Email' is not a valid email address."],
+    "Password": ["Password must be at least 8 characters long."]
+  }
 }
 
 ```
