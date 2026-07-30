@@ -358,6 +358,41 @@ Every endpoint (whether successful or failed) returns the exact same wrapper sha
 
 ---
 
+## 🗺️ Roadmap — Planned for V3
+
+Features and improvements under consideration for the next major version. Items marked ⚠️ already have a partial foundation in V2 and need a decision on scope (extend vs. build from scratch) before implementation.
+
+### 🏗️ Infrastructure & DevOps
+* **CI/CD Pipeline** — Automated build/test/deploy pipeline (not yet in place).
+* ⚠️ **CORS** — Needs verification that policies are correctly configured for production origins.
+
+### 📦 Caching
+* **Redis Caching** — Distributed caching layer for frequently-read data (product listings, category trees, review summaries). Not yet implemented.
+
+### 📁 Files & Media
+* **FileService / ImageService** — Centralized file/image upload and storage handling.
+* **Image Processing** — Resize, thumbnail generation, and compression pipeline (builds on FileService).
+
+### 🔔 Notifications & Reporting
+* **Bulk Notifications** — Batch notification dispatch (e.g., promotions, order updates).
+* **Report Generation** — Sales/orders reporting for Admin (exportable summaries).
+
+### ⚙️ Background Processing
+* ⚠️ **Worker Service** — Note: Hangfire already handles delayed/background jobs. A dedicated Worker Service only makes sense if the goal is an independent queue consumer decoupled from the web app — otherwise this overlaps with existing Hangfire jobs and needs a clear scope decision.
+
+### 🪵 Logging & Admin/Customer Service
+* ⚠️ **Audit Log & Admin Support Tooling** — Serilog already covers structured request logging. This is a broader addition: a per-entity audit trail (order status changes, payments, stock changes, reviews) plus admin-facing endpoints/screens to investigate customer issues. Additive to current logging, not a replacement.
+
+### 🏛️ Architecture & Documentation
+* **Architecture Documentation** — Formal docs describing system design and module boundaries.
+* **Deeper API Documentation** — Beyond the default Swagger UI (usage guides, examples, edge cases).
+* **CQRS** — Major architectural shift (splitting services into Commands/Queries). Requires evaluating whether it adds real value at this project's scale or introduces unnecessary complexity.
+
+### 🔐 Auth
+* ⚠️ **Unified Registration DTO** — Currently `/Register` (Buyer) and `/Register-Seller` are separate endpoints. Needs a decision: merge into a single endpoint with a role condition, or keep endpoints separate and only unify the underlying DTO.
+
+---
+
 ## 🙏 Mentorship
 
 Special thanks to the following mentors for their guidance throughout this project:

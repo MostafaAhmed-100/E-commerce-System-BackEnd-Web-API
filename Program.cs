@@ -184,6 +184,18 @@ builder.Services.AddRateLimiter(options =>
         await context.HttpContext.Response.WriteAsync("Too many requests. Please try again later.", cancellationToken);
     };
 });
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); 
+    });
+});
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -252,6 +264,7 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger/V2/swagger.json", "My API V2");
     c.DisplayRequestDuration();
 });
+app.UseCors("CorsPolicy");
 app.UseSerilogRequestLogging();
 app.UseHangfireDashboard("/hangfire");
 app.UseHttpsRedirection();

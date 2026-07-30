@@ -1,0 +1,35 @@
+name: .NET API CI/CD
+
+# الـ Pipeline هيشتغل إمتى؟
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest # هيشتغل على سيرفر لينكس مجاني من جيت هب
+
+    steps:
+    # 1. تنزيل الكود بتاعك من الـ Repo
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # 2. تسطيب بيئة .NET 8
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    # 3. تنزيل الباكيدجات (Restore)
+    - name: Restore dependencies
+      run: dotnet restore
+
+    # 4. عمل Build للمشروع (بدون Restore عشان نسرع الوقت)
+    - name: Build Project
+      run: dotnet build --no-restore --configuration Release
+
+    # 5. تشغيل الـ Unit Tests (NUnit/Moq)
+    - name: Run Unit Tests
+      run: dotnet test --no-build --configuration Release --verbosity normal

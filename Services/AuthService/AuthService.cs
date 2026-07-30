@@ -184,7 +184,6 @@ namespace WebApplication1.Services.AuthService
                     UserId = user.Id,
                 };
                 await _unitOfWork.BuyerRepository.AddAsync(buyer);
-                await _unitOfWork.SaveChangesAsync();
 
                 if (!await _roleManager.RoleExistsAsync(AppRoles.Buyer))
                 {
