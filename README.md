@@ -19,6 +19,7 @@ A full-featured, highly optimized E-Commerce backend built with **ASP.NET Core 8
 | **Rate Limiting** | ASP.NET Core Built-in Rate Limiting |
 | **Background Jobs** | Hangfire + Hangfire.SqlServer |
 | **Health Monitoring** | ASP.NET Core Health Checks + SQL Server Health Check UI |
+| **CI/CD** | GitHub Actions (`.github/workflows/dotnet-ci.yml`) |
 | **External Integration** | HttpClientFactory (Payment Gateway Webhooks) |
 | **Testing** | NUnit & Moq (Comprehensive Unit Testing for Business Logic) |
 
@@ -149,6 +150,8 @@ Each JWT payload contains:
 
 **Token Lifetime:** Access tokens are currently issued with a 1-year expiration window, backed by the Refresh Token flow for rotation.
 
+**CORS:** Configured in `Program.cs` with an explicit allowed-origins policy sourced from `appsettings.json`, restricting cross-origin requests to trusted frontend domains.
+
 ---
 
 ## 🚦 Rate Limiting
@@ -236,6 +239,15 @@ Hangfire Dashboard is available at: `/hangfire` *(Admin only in production)*
 
 ---
 
+## 🔄 CI/CD
+
+A GitHub Actions workflow (`.github/workflows/dotnet-ci.yml`) runs automatically on every push and pull request targeting `main`/`master`:
+
+* Restores dependencies and builds the solution.
+* Runs the NUnit test suite (`Tests/`) to catch regressions before merge.
+
+---
+
 ## ⚙️ Configuration (`appsettings.json`)
 
 ```json
@@ -308,6 +320,8 @@ dotnet run
 | **Clean Validation** | Fluent Validation rules separated from DTOs, enforced via a global Action Filter, with property-based grouped error responses. |
 | **Centralized Error Handling** | Custom middleware intercepts exceptions, enriches logs, and standardizes API responses. |
 | **Health Monitoring** | Dedicated `/api/health` endpoint with SQL Server connectivity checks and a live status UI. |
+| **CI/CD Pipeline** | GitHub Actions workflow automatically builds and runs the test suite on every push/PR to `main`/`master`. |
+| **CORS Policy** | Explicit allowed-origins configuration in `Program.cs`, sourced from `appsettings.json`. |
 | **Bilingual Support** | Full English and Arabic response localization based on the `Accept-Language` header. |
 | **Soft Delete** | Users, products, and orders are never hard-deleted; global query filters hide them automatically. |
 | **Product Variants** | Each product has multiple SKU variants (size, color, price, stock), each carrying live `AverageRating` and `TotalReviews` aggregates. |
@@ -361,10 +375,6 @@ Every endpoint (whether successful or failed) returns the exact same wrapper sha
 ## 🗺️ Roadmap — Planned for V3
 
 Features and improvements under consideration for the next major version. Items marked ⚠️ already have a partial foundation in V2 and need a decision on scope (extend vs. build from scratch) before implementation.
-
-### 🏗️ Infrastructure & DevOps
-* **CI/CD Pipeline** — Automated build/test/deploy pipeline (not yet in place).
-* ⚠️ **CORS** — Needs verification that policies are correctly configured for production origins.
 
 ### 📦 Caching
 * **Redis Caching** — Distributed caching layer for frequently-read data (product listings, category trees, review summaries). Not yet implemented.
